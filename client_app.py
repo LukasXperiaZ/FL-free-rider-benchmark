@@ -44,14 +44,9 @@ class BenignClient(NumPyClient):
         (i.e. the classification head). The classifier is saved at the end of the
         training and used the next time this client participates.
         """
-        # !!! TODO decide if we want to use local last layer or the global one !!!!
 
         # Apply weights from global models (the whole model is replaced)
         set_weights(self.net, parameters)
-
-        # Override weights in classification layer with those this client
-        # had at the end of the last fit() round it participated in
-        #self._load_layer_weights_from_state() #TODO decide if yes or no
 
         train_loss = train(
             self.net,
@@ -60,8 +55,6 @@ class BenignClient(NumPyClient):
             #lr=float(config["lr"]),
             device=self.device,
         )
-        # Save classification head to context's state to use in a future fit() call
-        self._save_layer_weights_to_state()
 
         # Return locally-trained model and metrics
         return (
@@ -71,22 +64,6 @@ class BenignClient(NumPyClient):
              "partition_id": self.partition_id},
         )
 
-    def _save_layer_weights_to_state(self):
-        """Save last layer weights to state."""
-        arr_record = ArrayRecord(self.net.fc2.state_dict())
-
-        # Add to RecordDict (replace if already exists)
-        self.client_state[self.local_layer_name] = arr_record
-
-    def _load_layer_weights_from_state(self):
-        """Load last layer weights to state."""
-        if self.local_layer_name not in self.client_state.array_records:
-            return
-
-        state_dict = self.client_state[self.local_layer_name].to_torch_state_dict()
-
-        # apply previously saved classification head by this client
-        self.net.fc2.load_state_dict(state_dict, strict=True)
 
     """ def evaluate(self, parameters, config):
         Evaluate the global model on the local validation set.

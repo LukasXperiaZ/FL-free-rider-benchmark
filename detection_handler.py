@@ -12,13 +12,14 @@ class DetectionHandler:
             self.detector = DAGMMDetection(config)
         elif self.method == DetectionNames.no_detection.value:
             print("### Using no detection ###")
+            self.method = None
             self.detector = None
         else:
             raise NameError(f"Detection {self.method} not known!")
         # Add more methods here
 
     def detect_anomalies(self, server_round, client_ids, client_updates):
-        if self.method == 'none':
+        if self.method is None:
             # no filtering
             return client_ids
         # Filter client updates

@@ -14,10 +14,10 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import (
     Compose,
     Normalize,
-    #RandomCrop,
-    #RandomHorizontalFlip,
     ToTensor,
 )
+import torchvision.models as models
+from torchvision.models import EfficientNet_B0_Weights
 
 from flwr.common.typing import UserConfig
 
@@ -25,37 +25,59 @@ CIFAR10_NORMALIZATION = (
     (0.4914, 0.4822, 0.4465),  # mean (R, G, B)
     (0.2023, 0.1994, 0.2010),  # std  (R, G, B)
 )
-CIFAR10_TRANSFORMS = Compose([
+TRAIN_TRANSFORMS = Compose([
     ToTensor(),
     Normalize(*CIFAR10_NORMALIZATION)
 ])
+EVAL_TRANSFORMS = Compose([
+    ToTensor(), Normalize(*CIFAR10_NORMALIZATION)
+])
 
 
-class Net(nn.Module):
-    """Model (simple CNN)"""
+def Net():
+    weights = EfficientNet_B0_Weights.IMAGENET1K_V1
+    model = models.efficientnet_b0(weights=weights)
+    # Modify classifier head for CIFAR-10 (10 output classes)
+    num_ftrs = model.classifier[1].in_features
+    model.classifier[1] = nn.Linear(num_ftrs, 10)
+    return model
 
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+fds = None  # Cache FederatedDataset
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+def load_data(partition_id: int, num_partitions: int):
+    """Load partition CIFAR10 data."""
+    # Only initialize `FederatedDataset` once
+    global fds
+    if fds is None:
+        partitioner = DirichletPartitioner(
+            num_partitions=num_partitions,
+            partition_by="label",
+            alpha=1.0,
+            seed=42,
+        )
+        fds = FederatedDataset(
+            dataset="uoft-cs/cifar10",
+            partitioners={"train": partitioner},
+        )
+    partition = fds.load_partition(partition_id)
+    # Divide data on each node: 80% train, 20% test
+    partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
 
+    train_partition = partition_train_test["train"].with_transform(
+        apply_train_transforms
+    )
+    test_partition = partition_train_test["test"].with_transform(apply_eval_transforms)
+    # Use drop_last=True when the model uses Batch Normalization:
+    #   This results in a slight loss of data, but enables models with batch normalization to be able to train 
+    #   if there happens to be only 1 sample in the last batch (yields an error, since it can't do batch normalization with just 1 sample).
+    trainloader = DataLoader(train_partition, batch_size=32, shuffle=True, drop_last=True) 
+    testloader = DataLoader(test_partition, batch_size=32)
 
-def train(net, trainloader, epochs, device):    # REMOVED: lr, 
+    return trainloader, testloader
+
+def train(net, trainloader, epochs, device):
     """Train the model on the training set."""
-    net.to(device)  # move model to GPU if available
+    net.to(device)
     criterion = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(net.parameters())
     net.train()
@@ -72,7 +94,6 @@ def train(net, trainloader, epochs, device):    # REMOVED: lr,
 
     avg_trainloss = running_loss / len(trainloader)
     return avg_trainloss
-
 
 def test(net, testloader, device):
     """Validate the model on the test set."""
@@ -103,50 +124,19 @@ def set_weights(net, parameters):
 
 def apply_train_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [CIFAR10_TRANSFORMS(img) for img in batch["img"]]
+    batch["img"] = [TRAIN_TRANSFORMS(img) for img in batch["img"]]
     return batch
 
 
 def apply_eval_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [CIFAR10_TRANSFORMS(img) for img in batch["img"]]
+    batch["img"] = [EVAL_TRANSFORMS(img) for img in batch["img"]]
     return batch
 
 def apply_test_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [CIFAR10_TRANSFORMS(img) for img in batch["img"]]
+    batch["img"] = [EVAL_TRANSFORMS(img) for img in batch["img"]]
     return batch
-
-
-fds = None  # Cache FederatedDataset
-
-
-def load_data(partition_id: int, num_partitions: int):
-    """Load partition CIFAR10 data."""
-    # Only initialize `FederatedDataset` once
-    global fds
-    if fds is None:
-        partitioner = DirichletPartitioner(
-            num_partitions=num_partitions,
-            partition_by="label",
-            alpha=1.0,
-            seed=42,
-        )
-        fds = FederatedDataset(
-            dataset="cifar10",
-            partitioners={"train": partitioner},
-        )
-    partition = fds.load_partition(partition_id)
-    # Divide data on each node: 80% train, 20% test
-    partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
-
-    train_partition = partition_train_test["train"].with_transform(
-        apply_train_transforms
-    )
-    test_partition = partition_train_test["test"].with_transform(apply_eval_transforms)
-    trainloader = DataLoader(train_partition, batch_size=32, shuffle=True)
-    testloader = DataLoader(test_partition, batch_size=32)
-    return trainloader, testloader
 
 
 def create_run_dir(config: UserConfig) -> Path:
