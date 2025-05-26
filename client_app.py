@@ -126,10 +126,10 @@ def client_fn(context: Context):
     # receives the same Context instance (it's a 1:1 mapping)
     if partition_id in malicious_ids:
         #print(f"Client {partition_id} is malicious")
-        if attack_method == AttackNames.random_weights_attack.name:
+        if attack_method == AttackNames.random_weights_attack.value:
             from attacks.random_weights_attack import RandomWeightsAttackClient
             return RandomWeightsAttackClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id).to_client()
-        elif attack_method == AttackNames.advanced_delta_weights_attack.name:
+        elif attack_method == AttackNames.advanced_delta_weights_attack.value:
             from attacks.advanced_delta_weights_attack import AdvancedDeltaWeightsAttack
             return AdvancedDeltaWeightsAttack(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id).to_client()
         else:

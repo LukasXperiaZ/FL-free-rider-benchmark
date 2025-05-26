@@ -32,7 +32,7 @@ CIFAR10_TRANSFORMS = Compose([
 
 
 class Net(nn.Module):
-    """Model (simple CNN from the pytorch tutorial for CIFAR10)"""
+    """Model (simple CNN)"""
 
     def __init__(self):
         super().__init__()

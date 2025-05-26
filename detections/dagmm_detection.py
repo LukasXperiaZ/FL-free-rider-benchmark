@@ -2,8 +2,9 @@ import os
 import torch
 import numpy as np
 from dagmm.dagmm import DAGMM
+from detections.detection import Detection
 
-class DAGMMDetection:
+class DAGMMDetection(Detection):
     def __init__(self, config):
         # initialize
         self.do_data_collection = config.get("do_data_collection", [])

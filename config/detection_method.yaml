@@ -1,6 +1,2 @@
-detection_method: dagmm
-dagmm_ignore_up_to: 0
-dagmm_model_path: /home/lukas/.cache/huggingface/hub/models--LukasXperiaZ--dagmm_free_rider/snapshots/840eeff8c84572d4dac9c8c26a24fb1caa9abc7d/dagmm_model.pt
-dagmm_output_dir: ./dagmm/dagmm_train_data/run_10
-dagmm_threshold: 2899.10546875
-do_data_collection: false
+detection_method: no_detection
+{}
