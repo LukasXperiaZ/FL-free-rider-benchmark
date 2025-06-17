@@ -13,13 +13,19 @@ class DAGMMDetection(Detection):
     
         self.threshold = config.get("dagmm_threshold")
         self.dagmm_model_path = config.get("dagmm_model_path")
+        self.dimensions = config.get("dagmm_dimensions")
+        self.latent_dim = config.get("latent_dim")
+        self.estimation_hidden_size = config.get("estimation_hidden_size")
+        self.n_gmm = config.get("n_gmm")
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.iteration = 0
         self.ignore_up_to = config.get("dagmm_ignore_up_to")
 
-        self.model = self._load_model()
+        if not self.do_data_collection:
+            # Only load the model if no data collection is done
+            self.model = self._load_model()
 
     def detect(self, server_round, client_ids, client_updates):
         if self.do_data_collection:
@@ -78,11 +84,11 @@ class DAGMMDetection(Detection):
 
     def _load_model(self):
         # Load trained DAGMM model
-        #print("Loading DAGMM model ...")
-        model = DAGMM()  # Load DAGMM model architecture
+        print("Loading DAGMM model ...")
+        model = DAGMM(self.device, self.dimensions, self.latent_dim, self.estimation_hidden_size, self.n_gmm)  # Load DAGMM model architecture
         model.load_state_dict(torch.load(self.dagmm_model_path, map_location=self.device))  # Load saved model parameters
         model.to(self.device)
         model.eval()
-        #print("Loading completed!")
+        print("Loading completed!")
         return model
 

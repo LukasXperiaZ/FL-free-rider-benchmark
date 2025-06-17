@@ -1,1 +1,13 @@
-detection_method: no_detection
+detection_method: dagmm
+dagmm_dimensions:
+- 61706
+- 1024
+- 256
+dagmm_ignore_up_to: 0
+dagmm_model_path: ./dagmm/dagmm_model_mnist.pt
+dagmm_output_dir: ./dagmm/dagmm_train_data/mnist/run_14
+dagmm_threshold: -3.619765943833526
+do_data_collection: true
+estimation_hidden_size: 16
+latent_dim: 64
+n_gmm: 8

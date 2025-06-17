@@ -25,22 +25,34 @@ CIFAR10_NORMALIZATION = (
     (0.4914, 0.4822, 0.4465),  # mean (R, G, B)
     (0.2023, 0.1994, 0.2010),  # std  (R, G, B)
 )
-TRAIN_TRANSFORMS = Compose([
-    ToTensor(),
-    Normalize(*CIFAR10_NORMALIZATION)
-])
-EVAL_TRANSFORMS = Compose([
-    ToTensor(), Normalize(*CIFAR10_NORMALIZATION)
-])
+MNIST_NORMALIZATION = (
+    (0.1307,),
+    (0.3081,)
+)
 
+import yaml
+with open("./config/dataset.yaml", "r") as f:
+        dataset_config = yaml.safe_load(f)
+DATASET = dataset_config.get("dataset", [])
+
+if DATASET == "cifar10":
+    img_key = "img"
+elif DATASET == "mnist":
+    img_key = "image"
 
 def Net():
-    weights = EfficientNet_B0_Weights.IMAGENET1K_V1
-    model = models.efficientnet_b0(weights=weights)
-    # Modify classifier head for CIFAR-10 (10 output classes)
-    num_ftrs = model.classifier[1].in_features
-    model.classifier[1] = nn.Linear(num_ftrs, 10)
-    return model
+    if DATASET == "cifar10":
+        weights = EfficientNet_B0_Weights.IMAGENET1K_V1
+        model = models.efficientnet_b0(weights=weights)
+        # Modify classifier head for CIFAR-10 (10 output classes)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier[1] = nn.Linear(num_ftrs, 10)
+        return model
+    elif DATASET == "mnist":
+        from models.lenet5 import LeNet5
+        return LeNet5()
+    else:
+        raise ValueError(f"Dataset {DATASET} not known!")
 
 fds = None  # Cache FederatedDataset
 
@@ -55,8 +67,12 @@ def load_data(partition_id: int, num_partitions: int):
             alpha=1.0,
             seed=42,
         )
+        if DATASET == "cifar10":
+            dataset_name = "uoft-cs/cifar10"
+        elif DATASET == "mnist":
+            dataset_name = "ylecun/mnist"
         fds = FederatedDataset(
-            dataset="uoft-cs/cifar10",
+            dataset=dataset_name,
             partitioners={"train": partitioner},
         )
     partition = fds.load_partition(partition_id)
@@ -84,7 +100,7 @@ def train(net, trainloader, epochs, device):
     running_loss = 0.0
     for _ in range(epochs):
         for batch in trainloader:
-            images = batch["img"]
+            images = batch[img_key]
             labels = batch["label"]
             optimizer.zero_grad()
             loss = criterion(net(images.to(device)), labels.to(device))
@@ -102,7 +118,7 @@ def test(net, testloader, device):
     correct, loss = 0, 0.0
     with torch.no_grad():
         for batch in testloader:
-            images = batch["img"].to(device)
+            images = batch[img_key].to(device)
             labels = batch["label"].to(device)
             outputs = net(images)
             loss += criterion(outputs, labels).item()
@@ -124,19 +140,28 @@ def set_weights(net, parameters):
 
 def apply_train_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [TRAIN_TRANSFORMS(img) for img in batch["img"]]
+    if DATASET == "cifar10":
+        NORMALIZATION = CIFAR10_NORMALIZATION
+    elif DATASET == "mnist":
+        NORMALIZATION = MNIST_NORMALIZATION
+    else:
+        raise ValueError(f"Dataset {DATASET} not known!")
+    
+    TRANSFORMS = Compose([
+        ToTensor(), 
+        Normalize(*NORMALIZATION)
+    ])
+    batch[img_key] = [TRANSFORMS(img) for img in batch[img_key]]
     return batch
 
 
 def apply_eval_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [EVAL_TRANSFORMS(img) for img in batch["img"]]
-    return batch
+    return apply_train_transforms(batch)
 
 def apply_test_transforms(batch):
     """Apply transforms to the partition from FederatedDataset."""
-    batch["img"] = [EVAL_TRANSFORMS(img) for img in batch["img"]]
-    return batch
+    return apply_eval_transforms(batch)
 
 
 def create_run_dir(config: UserConfig) -> Path:

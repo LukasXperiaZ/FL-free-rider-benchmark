@@ -15,6 +15,11 @@ from datasets import load_dataset
 from flwr.common import Context, ndarrays_to_parameters
 from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 
+import yaml
+with open("./config/dataset.yaml", "r") as f:
+        dataset_config = yaml.safe_load(f)
+DATASET = dataset_config.get("dataset", [])
+
 def gen_evaluate_fn(
     testloader: DataLoader,
     device: torch.device,
@@ -69,7 +74,8 @@ def server_fn(context: Context):
     # FlowerDatasets. However, we don't use FlowerDatasets for the server since
     # partitioning is not needed.
     # We make use of the "test" split only
-    global_test_set = load_dataset("cifar10")["test"]
+    print(f"----- Using the {DATASET} dataset -----")
+    global_test_set = load_dataset(DATASET)["test"]
 
     testloader = DataLoader(
         global_test_set.with_transform(apply_test_transforms),
