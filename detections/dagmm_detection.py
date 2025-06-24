@@ -1,8 +1,10 @@
 import os
 import torch
+from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
-from dagmm.dagmm import DAGMM
+from dagmm.dagmm.dagmm import DAGMM
 from detections.detection import Detection
+import yaml
 
 class DAGMMDetection(Detection):
     def __init__(self, config):
@@ -10,14 +12,19 @@ class DAGMMDetection(Detection):
         self.do_data_collection = config.get("do_data_collection", [])
         self.dagmm_output_dir = config.get("dagmm_output_dir", [])
         os.makedirs(self.dagmm_output_dir, exist_ok=True)
-    
-        self.threshold = config.get("dagmm_threshold")
-        self.dagmm_model_path = config.get("dagmm_model_path")
-        self.dimensions = config.get("dagmm_dimensions")
-        self.latent_dim = config.get("latent_dim")
-        self.estimation_hidden_size = config.get("estimation_hidden_size")
-        self.n_gmm = config.get("n_gmm")
 
+        with open(config.get("dagmm_threshold_path"), "r") as f:
+            dagmm_threshold_config = yaml.safe_load(f) 
+        self.threshold = dagmm_threshold_config.get("dagmm_threshold", [])
+        self.dagmm_model_path = config.get("dagmm_model_path")
+
+        hyperparameters_path = config.get("dagmm_hyperparameters_path")
+        from dagmm.dagmm.dagmm import DAGMM_Hyperparameters
+        self.dagmm_hyperparameters = DAGMM_Hyperparameters.load_params(hyperparameters_path)
+
+        self.gmm_params_paths = config.get("gmm_parameters_paths")
+        self.gmm_params = {}
+        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.iteration = 0
@@ -57,38 +64,36 @@ class DAGMMDetection(Detection):
             inputs.append(flat)
         inputs = np.stack(inputs)
 
-        inputs_tensor = torch.tensor(inputs, dtype=torch.float32).to(self.device)
-
         batch_size = len(inputs)
         if batch_size > 128:
             batch_size = 128
 
+        data_loader = DataLoader(TensorDataset(torch.tensor(inputs, dtype=torch.float32)),
+                              batch_size=batch_size, shuffle=False)
+
         # Get energies from DAGMM model (high energy -> anomaly)
-        energies = []
-        with torch.no_grad():
-            for i in range(0, len(inputs_tensor), batch_size):
-                batch = inputs_tensor[i:i+batch_size]
-                _, _, z, _ = self.model(batch)
-                # Use the corrected compute_energy method using the *model's* stored GMM params
-                energy, _ = self.model.compute_energy(z, size_average=False)
-                energies.append(energy.to("cpu"))
+        energies = self.model.compute_energies(data_loader, self.gmm_params)        
         
-        energies_ = torch.cat(energies).numpy() # These are the energies
-        print("Threshold: ", self.threshold)
-        sorted_energies = [int(energy) for energy in sorted(energies_)]
+        print(f"Threshold: {self.threshold:.2f}")
+        sorted_energies = [int(energy) for energy in sorted(energies)]
         print(f"Energies: ", sorted_energies)
 
         # Keep clients with low anomaly score
-        kept_ids = [cid for cid, score in zip(client_ids, energies_) if score < self.threshold]
+        kept_ids = [cid for cid, score in zip(client_ids, energies) if score < self.threshold]
         return kept_ids
 
     def _load_model(self):
         # Load trained DAGMM model
         print("Loading DAGMM model ...")
-        model = DAGMM(self.device, self.dimensions, self.latent_dim, self.estimation_hidden_size, self.n_gmm)  # Load DAGMM model architecture
+        model = DAGMM(self.device, self.dagmm_hyperparameters)  # Load DAGMM model architecture
         model.load_state_dict(torch.load(self.dagmm_model_path, map_location=self.device))  # Load saved model parameters
         model.to(self.device)
         model.eval()
+
+        self.gmm_params["mixture"] = torch.load(self.gmm_params_paths["mixture"])
+        self.gmm_params["mean"] = torch.load(self.gmm_params_paths["mean"])
+        self.gmm_params["cov"] = torch.load(self.gmm_params_paths["cov"])
+
         print("Loading completed!")
         return model
 

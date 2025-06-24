@@ -44,6 +44,7 @@ class FedAvgWithDetections(FedAvg):
         with open("./config/detection_method.yaml", "r") as f:
             detection_method_config = yaml.safe_load(f)
         detection_method = detection_method_config.get("detection_method", [])
+        print(f"=== Using {detection_method} ===")
         self.detection_handler = DetectionHandler(
             detection_method,
             config=detection_method_config,
@@ -80,20 +81,20 @@ class FedAvgWithDetections(FedAvg):
         ]
 
         # Determine dropped clients
-        dropped_ids = sorted(set(client_ids) - set(kept_client_ids))
+        dropped_ids = set(client_ids) - set(kept_client_ids)
         self.banned_client_ids.update(dropped_ids)
 
-        dropped_partition_ids = set([flower_cid_to_partition_id[cid] for cid in sorted(dropped_ids)])
+        dropped_partition_ids = set([flower_cid_to_partition_id[cid] for cid in dropped_ids])
         self.banned_partition_ids.update(dropped_partition_ids)
 
         assert len(dropped_ids) == len(dropped_partition_ids)
 
         if dropped_partition_ids:
-            print(f"[Round {server_round}] Dropped clients (anomalous): {dropped_partition_ids}")
+            print(f"[Round {server_round}] Dropped clients (anomalous):\t{sorted(list(dropped_partition_ids))}")
         else:
             print(f"[Round {server_round}] No clients dropped.")
 
-        print(f"All anomalous clients detected and removed: {sorted(list(self.banned_partition_ids))}")
+        print(f"All anomalous clients detected and removed:\t{sorted(list(self.banned_partition_ids))}")
 
         # Continue with filtered results
         return super().aggregate_fit(server_round, filtered_results, failures)

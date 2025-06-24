@@ -8,7 +8,7 @@ class RandomWeightsAttackClient(BenignClient):
         set_weights(self.net, parameters)
         
         # Random Weights attack
-        R = 1e-3
+        R = 1e-1    # Lin et al. suggest 1e-3. However, we found that the most realistic weights are produced with 1e-1.
         new_params = []
         for p in self.net.parameters():
             shape = p.data.shape

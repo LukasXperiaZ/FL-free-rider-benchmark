@@ -1,13 +1,11 @@
-detection_method: dagmm
-dagmm_dimensions:
-- 61706
-- 1024
-- 256
+detection_method: std_dagmm
+dagmm_hyperparameters_path: ./dagmm/std_dagmm/dagmm_hyperparameters.yaml
 dagmm_ignore_up_to: 0
-dagmm_model_path: ./dagmm/dagmm_model_mnist.pt
-dagmm_output_dir: ./dagmm/dagmm_train_data/mnist/run_14
-dagmm_threshold: -3.619765943833526
-do_data_collection: true
-estimation_hidden_size: 16
-latent_dim: 64
-n_gmm: 8
+dagmm_model_path: ./dagmm/std_dagmm/dagmm_model_mnist.pt
+dagmm_output_dir: '-----'
+dagmm_threshold_path: ./dagmm/std_dagmm/dagmm_anomaly_threshold.yaml
+do_data_collection: false
+gmm_parameters_paths:
+  cov: ./dagmm/std_dagmm/gmm_param_cov.pt
+  mean: ./dagmm/std_dagmm/gmm_param_mean.pt
+  mixture: ./dagmm/std_dagmm/gmm_param_mixture.pt

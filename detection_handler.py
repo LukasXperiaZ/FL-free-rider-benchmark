@@ -10,6 +10,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.dagmm_detection.value:
             from detections.dagmm_detection import DAGMMDetection
             self.detector = DAGMMDetection(config)
+        elif self.method == DetectionNames.std_dagmm_detection.value:
+            from detections.std_dagmm_detection import STDDAGMMDetection
+            self.detector = STDDAGMMDetection(config)
         elif self.method == DetectionNames.no_detection.value:
             print("### Using no detection ###")
             self.method = None

@@ -1,7 +1,7 @@
 /wandb
 /outputs
 __pycache__
-/dagmm/dagmm_train_data
+*.npy
 *.pt
 
 /data
