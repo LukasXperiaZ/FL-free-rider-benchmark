@@ -1,1 +1,1 @@
-attack_method: random_weights
+attack_method: advanced_delta_weights

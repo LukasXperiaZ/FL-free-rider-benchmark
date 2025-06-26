@@ -1,11 +1,12 @@
-detection_method: std_dagmm
-dagmm_hyperparameters_path: ./dagmm/std_dagmm/dagmm_hyperparameters.yaml
-dagmm_ignore_up_to: 0
-dagmm_model_path: ./dagmm/std_dagmm/dagmm_model_mnist.pt
-dagmm_output_dir: '-----'
-dagmm_threshold_path: ./dagmm/std_dagmm/dagmm_anomaly_threshold.yaml
+detection_method: delta_dagmm
+dagmm_hyperparameters_path: ./dagmm/delta_dagmm/dagmm_hyperparameters.yaml
+dagmm_ignore_up_to: 1
+dagmm_model_path: ./dagmm/delta_dagmm/dagmm_model_mnist.pt
+dagmm_output_dir: ./dagmm/delta_dagmm/dagmm_train_data/mnist/run_test_3
+dagmm_threshold_path: ./dagmm/delta_dagmm/dagmm_anomaly_threshold.yaml
 do_data_collection: false
+do_test_data_collection: false
 gmm_parameters_paths:
-  cov: ./dagmm/std_dagmm/gmm_param_cov.pt
-  mean: ./dagmm/std_dagmm/gmm_param_mean.pt
-  mixture: ./dagmm/std_dagmm/gmm_param_mixture.pt
+  cov: ./dagmm/delta_dagmm/gmm_param_cov.pt
+  mean: ./dagmm/delta_dagmm/gmm_param_mean.pt
+  mixture: ./dagmm/delta_dagmm/gmm_param_mixture.pt

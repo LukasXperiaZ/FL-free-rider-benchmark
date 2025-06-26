@@ -3,12 +3,12 @@ from client_app import BenignClient
 import torch
 
 class RandomWeightsAttackClient(BenignClient):
+
     def fit(self, parameters, config):
-        #print(f"[Client {self.partition_id}] fit, config: {config}")
         set_weights(self.net, parameters)
         
         # Random Weights attack
-        R = 1e-1    # Lin et al. suggest 1e-3. However, we found that the most realistic weights are produced with 1e-1.
+        R = self.config.get("R")
         new_params = []
         for p in self.net.parameters():
             shape = p.data.shape

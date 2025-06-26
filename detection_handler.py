@@ -13,6 +13,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.std_dagmm_detection.value:
             from detections.std_dagmm_detection import STDDAGMMDetection
             self.detector = STDDAGMMDetection(config)
+        elif self.method == DetectionNames.delta_dagmm_detection.value:
+            from detections.delta_dagmm_detection import DeltaDAGMMDetection
+            self.detector = DeltaDAGMMDetection(config)
         elif self.method == DetectionNames.no_detection.value:
             print("### Using no detection ###")
             self.method = None
@@ -21,12 +24,12 @@ class DetectionHandler:
             raise NameError(f"Detection {self.method} not known!")
         # Add more methods here
 
-    def detect_anomalies(self, server_round, client_ids, client_updates):
+    def detect_anomalies(self, server_round, client_ids, client_updates, global_model):
         if self.method is None:
             # no filtering
             return client_ids
         # Filter client updates
-        return self.detector.detect(server_round, client_ids, client_updates)
+        return self.detector.detect(server_round, client_ids, client_updates, global_model)
 
 class SampleDetection(Detection):
     """

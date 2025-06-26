@@ -3,8 +3,8 @@ from client_app import BenignClient
 import torch
 
 class AdvancedDeltaWeightsAttack(BenignClient):
-    def __init__(self, net, client_state, trainloader, valloader, local_epochs, partition_id):
-        super().__init__(net, client_state, trainloader, valloader, local_epochs, partition_id)
+    def __init__(self, net, client_state, trainloader, valloader, local_epochs, partition_id, config):
+        super().__init__(net, client_state, trainloader, valloader, local_epochs, partition_id, config)
         self.previous_params_tensor = None
 
     def get_tensor_parameters(self, parameters):

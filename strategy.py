@@ -44,7 +44,9 @@ class FedAvgWithDetections(FedAvg):
         with open("./config/detection_method.yaml", "r") as f:
             detection_method_config = yaml.safe_load(f)
         detection_method = detection_method_config.get("detection_method", [])
-        print(f"=== Using {detection_method} ===")
+        print("\n===== DETECTION =====")
+        print(f"\t{detection_method}")
+        print("===== ========= =====\n")
         self.detection_handler = DetectionHandler(
             detection_method,
             config=detection_method_config,
@@ -52,6 +54,9 @@ class FedAvgWithDetections(FedAvg):
         # A set of banned clients IDs (permanently excluded)
         self.banned_client_ids = set()
         self.banned_partition_ids = set()
+
+        # Store the global model of the current round
+        self.global_model = self.initial_parameters
 
 
     def aggregate_fit(self, server_round, results, failures):
@@ -71,7 +76,7 @@ class FedAvgWithDetections(FedAvg):
   
 
         # Detect anomalies
-        kept_client_ids = self.detection_handler.detect_anomalies(server_round, client_ids, client_updates)
+        kept_client_ids = self.detection_handler.detect_anomalies(server_round, client_ids, client_updates, self.global_model)
 
         # Filter results
         filtered_results = [
@@ -97,7 +102,9 @@ class FedAvgWithDetections(FedAvg):
         print(f"All anomalous clients detected and removed:\t{sorted(list(self.banned_partition_ids))}")
 
         # Continue with filtered results
-        return super().aggregate_fit(server_round, filtered_results, failures)
+        parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, filtered_results, failures)
+        self.global_model = parameters_aggregated
+        return parameters_aggregated, metrics_aggregated
     
     def configure_fit(self, server_round, parameters, client_manager):
         clients = client_manager.all()

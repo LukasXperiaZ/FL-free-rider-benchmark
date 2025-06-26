@@ -25,7 +25,7 @@ class BenignClient(NumPyClient):
     """
 
     def __init__(
-        self, net, client_state: RecordDict, trainloader, valloader, local_epochs, partition_id,
+        self, net, client_state: RecordDict, trainloader, valloader, local_epochs, partition_id, config
     ):
         self.net: Net = net
         self.client_state = client_state
@@ -36,6 +36,7 @@ class BenignClient(NumPyClient):
         self.net.to(self.device)
         self.local_layer_name = "classification-head"
         self.partition_id = partition_id
+        self.config = config
 
     def fit(self, parameters, config):
         """Train model locally.
@@ -80,10 +81,9 @@ class BenignClient(NumPyClient):
 
 
 # Load attack method from file
-attack_method = None
+attack_config = None
 with open("./config/attack_method.yaml", "r") as f:
-    attack_method_config = yaml.safe_load(f)
-    attack_method = attack_method_config.get("attack_method", [])
+    attack_config = yaml.safe_load(f)
 
 def client_fn(context: Context):
     import warnings
@@ -101,19 +101,20 @@ def client_fn(context: Context):
     # We pass the state to persist information across
     # participation rounds. Note that each client always
     # receives the same Context instance (it's a 1:1 mapping)
+    attack_method = attack_config.get("attack_method", [])
     if partition_id in malicious_ids:
         #print(f"Client {partition_id} is malicious")
         if attack_method == AttackNames.random_weights_attack.value:
             from attacks.random_weights_attack import RandomWeightsAttackClient
-            return RandomWeightsAttackClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id).to_client()
+            return RandomWeightsAttackClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
         elif attack_method == AttackNames.advanced_delta_weights_attack.value:
             from attacks.advanced_delta_weights_attack import AdvancedDeltaWeightsAttack
-            return AdvancedDeltaWeightsAttack(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id).to_client()
+            return AdvancedDeltaWeightsAttack(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
         else:
             raise RuntimeError(f"Attack method '{attack_method}' not known!")
 
     else:
-        return BenignClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id).to_client()
+        return BenignClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
 
 
 # Flower ClientApp

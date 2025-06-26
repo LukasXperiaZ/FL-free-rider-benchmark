@@ -74,8 +74,18 @@ def server_fn(context: Context):
     # FlowerDatasets. However, we don't use FlowerDatasets for the server since
     # partitioning is not needed.
     # We make use of the "test" split only
-    print(f"----- Using the {DATASET} dataset -----")
+    print("\n----- DATASET -----")
+    print(f"\t{DATASET}")
+    print("----- ------- -----\n")
     global_test_set = load_dataset(DATASET)["test"]
+
+    # Print the used attack
+    attack_config = None
+    with open("./config/attack_method.yaml", "r") as f:
+        attack_config = yaml.safe_load(f)
+        print("\n+++++ ATTACK(S) +++++")
+    print(f"\t{attack_config}")
+    print("+++++ +++++++++ +++++\n")
 
     testloader = DataLoader(
         global_test_set.with_transform(apply_test_transforms),
