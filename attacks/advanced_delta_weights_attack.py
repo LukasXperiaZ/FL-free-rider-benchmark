@@ -1,11 +1,9 @@
 from task import set_weights
 from client_app import BenignClient
 import torch
+from flwr.common import ArrayRecord
 
 class AdvancedDeltaWeightsAttack(BenignClient):
-    def __init__(self, net, client_state, trainloader, valloader, local_epochs, partition_id, config):
-        super().__init__(net, client_state, trainloader, valloader, local_epochs, partition_id, config)
-        self.previous_params_tensor = None
 
     def get_tensor_parameters(self, parameters):
         """Converts a list of NumPy arrays to a list of PyTorch tensors."""
@@ -16,12 +14,14 @@ class AdvancedDeltaWeightsAttack(BenignClient):
 
 
     def fit(self, parameters, config):
-        #print(f"[Client {self.partition_id}] fit, config: {config}")
+        print(f"fit called for AdvancedFreeRiderAttack, self ID: {id(self)}")
         set_weights(self.net, parameters)
+
+        key = "previous_params"
         
-        # Delta Weights attack
+        # Advanced delta weights attack
         current_params_tensor = self.get_tensor_parameters(parameters)
-        previous_params_tensor = self.previous_params_tensor
+        previous_params_tensor = self._load_param_tensors(key)
 
         # Gaussian noise parameters
         mu = 0
@@ -52,9 +52,23 @@ class AdvancedDeltaWeightsAttack(BenignClient):
         new_params = [param.cpu().numpy() for param in new_params_tensor]
 
         # Set the current parameters as the previous for the next round
-        self.previous_params_tensor = current_params_tensor
+        self._save_param_tensors(key, parameters)
 
         return (new_params, 
                 len(self.trainloader),
                 {"partition_id": self.partition_id}
             )
+    
+    def _save_param_tensors(self, key: str, parameters):
+        arr_record = ArrayRecord.from_numpy_ndarrays(parameters)
+        self.client_state[key] = arr_record
+
+    def _load_param_tensors(self, key: str):
+        if key not in self.client_state.keys():
+            # No parameters stored
+            return None
+
+        parameters = self.client_state[key].to_numpy_ndarrays()
+
+        return self.get_tensor_parameters(parameters)
+

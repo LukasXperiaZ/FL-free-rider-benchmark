@@ -38,7 +38,7 @@ class DeltaDAGMMDetection(DAGMMDetection):
 
     def _perform_detection(self, client_ids, client_updates, global_model):
         # preprocess client updates and the global model
-        # apply Delta-DAGMM to detect anomalies TODO modify
+        # apply Delta-DAGMM to detect anomalies
         # return only non-anomalous updates
 
         global_model_arrays = parameters_to_ndarrays(global_model)

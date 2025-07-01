@@ -110,6 +110,9 @@ def client_fn(context: Context):
         elif attack_method == AttackNames.advanced_delta_weights_attack.value:
             from attacks.advanced_delta_weights_attack import AdvancedDeltaWeightsAttack
             return AdvancedDeltaWeightsAttack(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
+        elif attack_method == AttackNames.advanced_free_rider_attack.value:
+            from attacks.advanced_free_rider_attack import AdvancedFreeRiderAttack
+            return AdvancedFreeRiderAttack(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
         else:
             raise RuntimeError(f"Attack method '{attack_method}' not known!")
 
