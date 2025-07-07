@@ -14,7 +14,6 @@ class AdvancedDeltaWeightsAttack(BenignClient):
 
 
     def fit(self, parameters, config):
-        print(f"fit called for AdvancedFreeRiderAttack, self ID: {id(self)}")
         set_weights(self.net, parameters)
 
         key = "previous_params"
@@ -52,14 +51,14 @@ class AdvancedDeltaWeightsAttack(BenignClient):
         new_params = [param.cpu().numpy() for param in new_params_tensor]
 
         # Set the current parameters as the previous for the next round
-        self._save_param_tensors(key, parameters)
+        self._save_params(key, parameters)
 
         return (new_params, 
                 len(self.trainloader),
                 {"partition_id": self.partition_id}
             )
     
-    def _save_param_tensors(self, key: str, parameters):
+    def _save_params(self, key: str, parameters):
         arr_record = ArrayRecord.from_numpy_ndarrays(parameters)
         self.client_state[key] = arr_record
 

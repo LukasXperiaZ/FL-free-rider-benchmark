@@ -18,9 +18,7 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
         return numpy_arrays
 
     def fit(self, parameters, config):
-        print(f"fit called for AdvancedFreeRiderAttack, self ID: {id(self)}")
         set_weights(self.net, parameters)
-        # TODO updating global model history (theta's) does not work
 
         key_theta_minus_1 = "theta_minus_1"
         key_theta_minus_2 = "theta_minus_2"
@@ -30,18 +28,20 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
 
         if key_t not in self.client_state.keys():
             ### Initialize the first round
-            self.client_state[key_t] = ArrayRecord({key_t: [1]})
-            # Save the initial global model
-            self._save_param_tensors(key_theta_0, parameters)
+            t_arr = np.array([1])
+            self.client_state[key_t] = ArrayRecord([t_arr])
         else:
             ### Update the current iteration t
-            self.client_state[key_t].get(key_t)[0] += 1
-        t = int(self.client_state[key_t].get(key_t)[0])
+            t_arr = self.client_state[key_t].to_numpy_ndarrays()[0]
+            t_arr[0] += 1
+            self.client_state[key_t] = ArrayRecord([t_arr])
+
+        t_arr = self.client_state[key_t].to_numpy_ndarrays()[0]
+        t = int(t_arr[0])
 
         # Gaussian noise parameters
         mu = 0
-        #d = 0 #TODO change
-        sigma = 1e-3    #1/d
+        sigma = 1e-3    # Sigma for the first and second round
 
         # Advanced free rider attack
         theta_t = self.get_tensor_parameters(parameters)
@@ -49,7 +49,11 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
         theta_t_minus_2 = self._load_param_tensors(key_theta_minus_2)
 
         if not theta_t_minus_1:
-            ### This is the first round, only add gaussian noise
+            ### This is the first round.
+            # Save the initial global model (theta_0)
+            self._save_params(key_theta_0, parameters)
+
+            # Only add gaussian noise
             # Generate Gaussian noise
             noise = [(torch.randn_like(param) + mu) * sigma for param in theta_t]
 
@@ -58,11 +62,13 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
 
             ### Update history
             # Set theta_minus_1 = theta
-            self._save_param_tensors(key_theta_minus_1, parameters)
+            self._save_params(key_theta_minus_1, parameters)
 
         elif not theta_t_minus_2:
             ### This is the second round.
-            self._save_param_tensors(key_theta_1, parameters)
+            # Save the first aggregated global model (theta_1)
+            self._save_params(key_theta_1, parameters)
+
             # Theta-1 is available. Perform the advanced delta weights attack.
             # Compute the delta of the weigts of the previous 
             # --- Note that we changed this from (prev - current) to (current - prev), maybe there is a mistake in Equation 2 in the paper of Lin et al. ---
@@ -76,9 +82,9 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
 
             ### Update history
             # Set theta_minus_2 = theta_minus_1
-            self._save_param_tensors(key_theta_minus_2, self.convert_tensor_list_to_numpy_list(theta_t_minus_1))
+            self._save_params(key_theta_minus_2, self.convert_tensor_list_to_numpy_list(theta_t_minus_1))
             # Set theta_minus_1 = theta
-            self._save_param_tensors(key_theta_minus_1, parameters)
+            self._save_params(key_theta_minus_1, parameters)
 
         else:
             ### This is after the second round, theta-1 and theta-2 are available!
@@ -90,9 +96,7 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
             
             delta_t_t1_l2 = dalta_t_t1_flat.norm(p=2).item()
             delta_t1_t2_l2 = delta_t_t2_flat.norm(p=2).item()
-            factor = delta_t_t1_l2 / delta_t1_t2_l2
-
-            # print(factor) Starts at ~0.4 and converges to ~0.9
+            factor = delta_t_t1_l2 / delta_t1_t2_l2 # factor starts at ~0.4 and converges to ~0.99
 
             U_f_theta = [tensor * factor for tensor in delta_t_t1]
 
@@ -107,34 +111,38 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
 
             lambda_ = np.log((l_t/l_1) ** (1/(t-1)))
             C = 0.5 # TODO find a good value for C.
-            E_cos_beta = C**2 / (C**2 + np.e**(2*lambda_*t))
+            E_cos_beta = C**2 / (C**2 + np.e**(2*lambda_*t)) # starts at 1 and converges to 0
             n = self.config.get("n")
             U_f_theta_flat = torch.cat([t.flatten() for t in U_f_theta])
-            U_f_theta_l2 = U_f_theta_flat.norm(p=2).item()
+            U_f_theta_l2 = U_f_theta_flat.norm(p=2).item()  # Starts at ~1.3 and goes down to ~0.7
             # Calculate |φ(t)|
-            phi_t_l2 = np.sqrt(n**2 / (n + (n**2 - n)*E_cos_beta) - 1) * U_f_theta_l2
+            phi_t_l2 = np.sqrt(n**2 / (n + (n**2 - n)*E_cos_beta) - 1) * U_f_theta_l2   # Starts at ~0.9 and goes down to ~0.2
 
             # HYPERPARAMETER: Percentage of parameters to add Gaussian noise to.
-            d = 0.1 # TODO find a good value for d.
+            d_frac = 0.1 # TODO find a good value for d.
             n_parameters = 0
             for tensor in U_f_theta:
                 n_params = tensor.numel()
                 n_parameters += n_params
 
-            n_params_subset = d * n_parameters
-            std = 1/n_params_subset
-            # TODO compute gaussian noise to subset of parameters, i.e. go over every parameter and if the following check passes, add the gaussian noise (|phi(t)|*N(0, std)).
-            if random.random() < d:
-                pass
+            d = d_frac * n_parameters
+            std = 1/d   # We use d as the absoulte numbers of parameters that will be modified, since using the relative number of parameters, 
+                        # e.g. d=0.1, would result in a huge std (10 in this case)!
+            # Compute gaussian noise and add it to a subset of parameters: (|phi(t)|*N(0, std)).
+            for tensor in U_f_theta:
+                random_mask = torch.rand(tensor.shape, device=tensor.device)
+                add_gaussian_noise_mask = random_mask <= d_frac
+                gaussian_noise = (torch.randn(tensor.shape, device=tensor.device) * std + mu) * phi_t_l2
+                tensor[add_gaussian_noise_mask] += gaussian_noise[add_gaussian_noise_mask]
 
             # Update tensor
             new_params_tensor = [current_param_tensor + delta_weight for current_param_tensor, delta_weight in zip(theta_t, U_f_theta)]
 
             ### Update history
             # Set theta_minus_2 = theta_minus_1
-            self._save_param_tensors(key_theta_minus_2, self.convert_tensor_list_to_numpy_list(theta_t_minus_1))
+            self._save_params(key_theta_minus_2, self.convert_tensor_list_to_numpy_list(theta_t_minus_1))
             # Set theta_minus_1 = theta
-            self._save_param_tensors(key_theta_minus_1, parameters)
+            self._save_params(key_theta_minus_1, parameters)
 
         new_params = [param.cpu().numpy() for param in new_params_tensor]
         return (new_params, 
