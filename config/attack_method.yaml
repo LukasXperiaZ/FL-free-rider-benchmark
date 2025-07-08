@@ -1,1 +1,1 @@
-attack_method: advanced_delta_weights
+attack_method: adaptive
