@@ -64,6 +64,7 @@ class FedAvgWithDetections(FedAvg):
         client_updates = []
         client_ids = []
         flower_cid_to_partition_id = {}
+        partition_id_to_flower_cid = {}
 
         for client_proxy, fit_res in results:
             weights = parameters_to_ndarrays(fit_res.parameters)
@@ -73,10 +74,12 @@ class FedAvgWithDetections(FedAvg):
             # Ensure 'partition_id' is in metrics, provide a fallback if not
             partition_id = fit_res.metrics.get("partition_id", "UNKNOWN_PARTITION_ID")
             flower_cid_to_partition_id[cid] = partition_id
+            partition_id_to_flower_cid[partition_id] = cid
   
-
+        partition_ids = [flower_cid_to_partition_id[cid] for cid in client_ids]
         # Detect anomalies
-        kept_client_ids = self.detection_handler.detect_anomalies(server_round, client_ids, client_updates, self.global_model)
+        kept_partition_ids = self.detection_handler.detect_anomalies(server_round, partition_ids, client_updates, self.global_model)
+        kept_client_ids = [partition_id_to_flower_cid[partition_id] for partition_id in kept_partition_ids]
 
         # Filter results
         filtered_results = [

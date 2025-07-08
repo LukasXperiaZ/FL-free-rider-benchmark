@@ -1,0 +1,8 @@
+dimensions:
+- 850
+- 128
+- 64
+- 32
+estimation_hidden_size: 10
+latent_dim: 8
+n_gmm: 2

@@ -4,5 +4,5 @@ dimensions:
 - 64
 - 32
 estimation_hidden_size: 8
-latent_dim: 16
-n_gmm: 10
+latent_dim: 8
+n_gmm: 2
