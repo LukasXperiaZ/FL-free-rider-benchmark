@@ -24,7 +24,7 @@ class FedAvgWithDetections(FedAvg):
     results to W&B if enabled.
     """
 
-    def __init__(self, run_config: UserConfig, use_wandb: bool, *args, **kwargs):
+    def __init__(self, run_config: UserConfig, use_wandb: bool, detection_method_config, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Create a directory where to save results from this run
@@ -40,13 +40,7 @@ class FedAvgWithDetections(FedAvg):
         # A dictionary to store results as they come
         self.results = {}
 
-        # Load detection method from file
-        with open("./config/detection_method.yaml", "r") as f:
-            detection_method_config = yaml.safe_load(f)
         detection_method = detection_method_config.get("detection_method", [])
-        print("\n===== DETECTION =====")
-        print(f"\t{detection_method}")
-        print("===== ========= =====\n")
         self.detection_handler = DetectionHandler(
             detection_method,
             config=detection_method_config,

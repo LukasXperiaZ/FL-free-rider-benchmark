@@ -2,6 +2,7 @@
 
 import torch
 from strategy import FedAvgWithDetections
+from detections.strategies.rffl import RFFL
 from task import (
     Net,
     apply_test_transforms,
@@ -14,6 +15,8 @@ from torch.utils.data import DataLoader
 from datasets import load_dataset
 from flwr.common import Context, ndarrays_to_parameters
 from flwr.server import ServerApp, ServerAppComponents, ServerConfig
+
+from detections.detection_names import DetectionNames
 
 import yaml
 with open("./config/dataset.yaml", "r") as f:
@@ -83,9 +86,21 @@ def server_fn(context: Context):
     attack_config = None
     with open("./config/attack_method.yaml", "r") as f:
         attack_config = yaml.safe_load(f)
-        print("\n+++++ ATTACK(S) +++++")
+    with open("./config/malicious_clients.yaml", "r") as f:
+        malicious_clients_config = yaml.safe_load(f)
+    print("\n+++++ ATTACK(S) +++++")
     print(f"\t{attack_config}")
+    print(".......................")
+    print(f"\t{malicious_clients_config}")
     print("+++++ +++++++++ +++++\n")
+
+    # Load detection method from file
+    with open("./config/detection_method.yaml", "r") as f:
+        detection_method_config = yaml.safe_load(f)
+    detection_method = detection_method_config.get("detection_method", [])
+    print("\n===== DETECTION =====")
+    print(f"\t{detection_method}")
+    print("===== ========= =====\n")
 
     testloader = DataLoader(
         global_test_set.with_transform(apply_test_transforms),
@@ -93,16 +108,36 @@ def server_fn(context: Context):
     )
 
     # Define strategy
-    strategy = FedAvgWithDetections(
-        run_config=context.run_config,
-        use_wandb=context.run_config["use-wandb"],
-        fraction_fit=fraction_fit,
-        fraction_evaluate=fraction_eval,
-        initial_parameters=parameters,
-        #on_fit_config_fn=on_fit_config,
-        evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
-        evaluate_metrics_aggregation_fn=weighted_average,
-    )
+    if detection_method == DetectionNames.rffl_detection.value:
+        alpha = detection_method_config.get("alpha")
+        beta = detection_method_config.get("beta")
+        gamma = detection_method_config.get("gamma")
+        strategy = RFFL(
+            run_config=context.run_config,
+            use_wandb=context.run_config["use-wandb"],
+            detection_method_config=detection_method_config,
+            alpha=alpha,
+            beta=beta,
+            gamma=gamma,
+            fraction_fit=fraction_fit,
+            fraction_evaluate=fraction_eval,
+            initial_parameters=parameters,
+            #on_fit_config_fn=on_fit_config,
+            evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
+            evaluate_metrics_aggregation_fn=weighted_average,
+        )
+    else:
+        strategy = FedAvgWithDetections(
+            run_config=context.run_config,
+            use_wandb=context.run_config["use-wandb"],
+            detection_method_config=detection_method_config,
+            fraction_fit=fraction_fit,
+            fraction_evaluate=fraction_eval,
+            initial_parameters=parameters,
+            #on_fit_config_fn=on_fit_config,
+            evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
+            evaluate_metrics_aggregation_fn=weighted_average,
+        )
     config = ServerConfig(num_rounds=num_rounds)
 
     return ServerAppComponents(strategy=strategy, config=config)

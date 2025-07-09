@@ -16,6 +16,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.delta_dagmm_detection.value:
             from detections.delta_dagmm_detection import DeltaDAGMMDetection
             self.detector = DeltaDAGMMDetection(config)
+        elif self.method == DetectionNames.rffl_detection.value:
+            # RFFL handles the detection itself
+            self.detector = None
         elif self.method == DetectionNames.no_detection.value:
             print("### Using no detection ###")
             self.method = None

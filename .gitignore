@@ -9,3 +9,7 @@ __pycache__
 .venv
 
 test_things.ipynb
+
+/config/attack_method.yaml
+/config/detection_method.yaml
+/config/malicious_clients.yaml
