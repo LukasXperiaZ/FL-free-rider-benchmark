@@ -21,8 +21,8 @@ class RFFL(FedAvgWithDetections):
     A class that behaves like FedAvgWithDetections but implements the custom aggregation logic of RFFL.
     """
 
-    def __init__(self, run_config, use_wandb, detection_method_config, alpha, beta, gamma, *args, **kwargs):
-        super().__init__(run_config, use_wandb, detection_method_config, *args, **kwargs)
+    def __init__(self, run_config, use_wandb, detection_handler, alpha, beta, gamma, *args, **kwargs):
+        super().__init__(run_config, use_wandb, detection_handler, *args, **kwargs)
 
         # reputations[i] returns the reputation of client i of the past round (t-1)
         # The sum of all reputations of all reputable clients (reputations[i] >= beta) is always 1.
@@ -69,7 +69,7 @@ class RFFL(FedAvgWithDetections):
         for _, fit_res in results:
             i = fit_res.metrics.get("partition_id")
             w_i_t = parameters_to_ndarrays(fit_res.parameters)
-            r_i_t = self.calculate_cosine_s1imilarity(w_g_t, w_i_t)
+            r_i_t = self.calculate_cosine_similarity(w_g_t, w_i_t)
             self.reputations[i] = self.alpha*self.reputations[i] + (1 - self.alpha)*r_i_t
 
             if self.reputations[i] < self.beta:

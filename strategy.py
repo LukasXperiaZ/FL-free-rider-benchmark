@@ -22,9 +22,15 @@ class FedAvgWithDetections(FedAvg):
     This strategy: (1) saves results to the filesystem, (2) saves a
     checkpoint of the global  model when a new best is found, (3) logs
     results to W&B if enabled.
+
+    Furthermore, it provides the basic functionality to perform detections.
+    Concretely, one has to create a subclass of this class and implement the
+    detection in aggregate_fit.
+    When wanting to perform the aggregation, simply call super().aggregate_fit(...).
+    To eliminate clients from the FL procedure, add them to self.banned_client_ids
     """
 
-    def __init__(self, run_config: UserConfig, use_wandb: bool, detection_method_config, *args, **kwargs):
+    def __init__(self, run_config: UserConfig, use_wandb: bool, detection_handler: DetectionHandler, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Create a directory where to save results from this run
@@ -40,11 +46,7 @@ class FedAvgWithDetections(FedAvg):
         # A dictionary to store results as they come
         self.results = {}
 
-        detection_method = detection_method_config.get("detection_method", [])
-        self.detection_handler = DetectionHandler(
-            detection_method,
-            config=detection_method_config,
-        )
+        self.detection_handler = detection_handler
         # A set of banned clients IDs (permanently excluded)
         self.banned_client_ids = set()
         self.banned_partition_ids = set()
@@ -54,54 +56,7 @@ class FedAvgWithDetections(FedAvg):
 
 
     def aggregate_fit(self, server_round, results, failures):
-        
-        client_updates = []
-        client_ids = []
-        flower_cid_to_partition_id = {}
-        partition_id_to_flower_cid = {}
-
-        for client_proxy, fit_res in results:
-            weights = parameters_to_ndarrays(fit_res.parameters)
-            cid = client_proxy.cid
-            client_updates.append(weights)
-            client_ids.append(cid)
-            # Ensure 'partition_id' is in metrics, provide a fallback if not
-            partition_id = fit_res.metrics.get("partition_id", "UNKNOWN_PARTITION_ID")
-            flower_cid_to_partition_id[cid] = partition_id
-            partition_id_to_flower_cid[partition_id] = cid
-  
-        partition_ids = [flower_cid_to_partition_id[cid] for cid in client_ids]
-        # Detect anomalies
-        kept_partition_ids = self.detection_handler.detect_anomalies(server_round, partition_ids, client_updates, self.global_model)
-        kept_client_ids = [partition_id_to_flower_cid[partition_id] for partition_id in kept_partition_ids]
-
-        # Filter results
-        filtered_results = [
-            (client_proxy, fit_res)
-            for client_proxy, fit_res in results
-            if client_proxy.cid in kept_client_ids
-        ]
-
-        # Determine dropped clients
-        dropped_ids = set(client_ids) - set(kept_client_ids)
-        self.banned_client_ids.update(dropped_ids)
-
-        dropped_partition_ids = set([flower_cid_to_partition_id[cid] for cid in dropped_ids])
-        self.banned_partition_ids.update(dropped_partition_ids)
-
-        assert len(dropped_ids) == len(dropped_partition_ids)
-
-        if dropped_partition_ids:
-            print(f"[Round {server_round}] Dropped clients (anomalous):\t{sorted(list(dropped_partition_ids))}")
-        else:
-            print(f"[Round {server_round}] No clients dropped.")
-
-        print(f"All anomalous clients detected and removed:\t{sorted(list(self.banned_partition_ids))}")
-
-        # Continue with filtered results
-        parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, filtered_results, failures)
-        self.global_model = parameters_aggregated
-        return parameters_aggregated, metrics_aggregated
+        return super().aggregate_fit(server_round, results, failures)
     
     def configure_fit(self, server_round, parameters, client_manager):
         clients = client_manager.all()

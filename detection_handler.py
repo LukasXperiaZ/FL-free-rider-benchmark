@@ -1,5 +1,5 @@
 from detections.detection_names import DetectionNames
-from detections.detection import Detection
+from detections.detection import Detection, DetectionAfterAggregation
 
 class DetectionHandler:
     def __init__(self, method, config):
@@ -16,6 +16,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.delta_dagmm_detection.value:
             from detections.delta_dagmm_detection import DeltaDAGMMDetection
             self.detector = DeltaDAGMMDetection(config)
+        elif self.method == DetectionNames.fgfl_detection.value:
+            from detections.fgfl import FGFLDetection
+            self.detector = FGFLDetection(config)
         elif self.method == DetectionNames.rffl_detection.value:
             # RFFL handles the detection itself
             self.detector = None
@@ -25,7 +28,19 @@ class DetectionHandler:
             self.detector = None
         else:
             raise NameError(f"Detection {self.method} not known!")
-        # Add more methods here
+
+        # Check whether the detection should be performed after the aggregation step
+        if isinstance(self.detector, DetectionAfterAggregation):
+            self.after_aggregation = True
+        else:
+            self.after_aggregation = False
+
+    def set_aggregated_global_model(self, aggregated_global_model):
+        # In case the detection is a Detection that is performed after aggregation
+        if not isinstance(self.detector, DetectionAfterAggregation):
+            raise RuntimeError(f"The detection {self.method} is not a DetectionAfterAggregation!")
+        
+        self.detector.set_aggregated_global_model(aggregated_global_model)
 
     def detect_anomalies(self, server_round, client_ids, client_updates, global_model):
         if self.method is None:

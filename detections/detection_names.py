@@ -7,4 +7,6 @@ class DetectionNames(Enum):
     std_dagmm_detection = "std_dagmm"
     delta_dagmm_detection = "delta_dagmm"
 
+    fgfl_detection = "fgfl"
+
     rffl_detection = "rffl"

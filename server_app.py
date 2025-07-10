@@ -1,7 +1,8 @@
 """pytorch-example: A Flower / PyTorch app."""
 
 import torch
-from strategy import FedAvgWithDetections
+from detections.strategies.detection_before_aggregation import FedAvgWithDetectionsBeforeAggregation
+from detections.strategies.detection_after_aggregation import FedAvgWithDetectionsAfterAggregation
 from detections.strategies.rffl import RFFL
 from task import (
     Net,
@@ -17,6 +18,7 @@ from flwr.common import Context, ndarrays_to_parameters
 from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 
 from detections.detection_names import DetectionNames
+from detection_handler import DetectionHandler
 
 import yaml
 with open("./config/dataset.yaml", "r") as f:
@@ -101,6 +103,11 @@ def server_fn(context: Context):
     print("\n===== DETECTION =====")
     print(f"\t{detection_method}")
     print("===== ========= =====\n")
+    detection_method = detection_method_config.get("detection_method", [])
+    detection_handler = DetectionHandler(
+        detection_method,
+        config=detection_method_config,
+    )
 
     testloader = DataLoader(
         global_test_set.with_transform(apply_test_transforms),
@@ -115,7 +122,7 @@ def server_fn(context: Context):
         strategy = RFFL(
             run_config=context.run_config,
             use_wandb=context.run_config["use-wandb"],
-            detection_method_config=detection_method_config,
+            detection_handler=detection_handler,
             alpha=alpha,
             beta=beta,
             gamma=gamma,
@@ -126,11 +133,12 @@ def server_fn(context: Context):
             evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
             evaluate_metrics_aggregation_fn=weighted_average,
         )
-    else:
-        strategy = FedAvgWithDetections(
+    elif detection_handler.after_aggregation:
+        # Perform the detection after the aggregation step
+        strategy = FedAvgWithDetectionsAfterAggregation(
             run_config=context.run_config,
             use_wandb=context.run_config["use-wandb"],
-            detection_method_config=detection_method_config,
+            detection_handler=detection_handler,
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_eval,
             initial_parameters=parameters,
@@ -138,6 +146,20 @@ def server_fn(context: Context):
             evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
             evaluate_metrics_aggregation_fn=weighted_average,
         )
+    else:
+        # Perform the detection before the aggregation step
+        strategy = FedAvgWithDetectionsBeforeAggregation(
+            run_config=context.run_config,
+            use_wandb=context.run_config["use-wandb"],
+            detection_handler=detection_handler,
+            fraction_fit=fraction_fit,
+            fraction_evaluate=fraction_eval,
+            initial_parameters=parameters,
+            #on_fit_config_fn=on_fit_config,
+            evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
+            evaluate_metrics_aggregation_fn=weighted_average,
+        )
+
     config = ServerConfig(num_rounds=num_rounds)
 
     return ServerAppComponents(strategy=strategy, config=config)
