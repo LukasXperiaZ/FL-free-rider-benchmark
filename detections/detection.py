@@ -3,7 +3,7 @@ class Detection:
         raise NotImplementedError
 
     
-    def detect(self, server_round, client_ids, client_updates, global_model) -> list:
+    def detect(self, server_round, client_ids, client_updates, client_metrics, global_model) -> list:
         """
         Function that detects free riders.
         Returns a list of client ids that are benign (i.e. it excludes identified free riders).

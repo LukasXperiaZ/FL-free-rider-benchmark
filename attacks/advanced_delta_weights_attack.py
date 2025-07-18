@@ -1,9 +1,10 @@
 from task import set_weights
-from client_app import BenignClient
+from attacks.attack_client import AttackClient
 import torch
 from flwr.common import ArrayRecord
+import json
 
-class AdvancedDeltaWeightsAttack(BenignClient):
+class AdvancedDeltaWeightsAttack(AttackClient):
 
     def get_tensor_parameters(self, parameters):
         """Converts a list of NumPy arrays to a list of PyTorch tensors."""
@@ -53,10 +54,8 @@ class AdvancedDeltaWeightsAttack(BenignClient):
         # Set the current parameters as the previous for the next round
         self._save_params(key, parameters)
 
-        return (new_params, 
-                len(self.trainloader),
-                {"partition_id": self.partition_id}
-            )
+        label_counts_dict = self._get_label_distribution(self.trainloader)
+        return self._fit_return(new_params, len(self.trainloader.dataset), 0.5, self.partition_id, json.dumps(label_counts_dict))
     
     def _save_params(self, key: str, parameters):
         arr_record = ArrayRecord.from_numpy_ndarrays(parameters)

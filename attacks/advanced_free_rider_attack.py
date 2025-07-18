@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from flwr.common import ArrayRecord
 import random
+import json
 
 class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
 
@@ -145,7 +146,6 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
             self._save_params(key_theta_minus_1, parameters)
 
         new_params = [param.cpu().numpy() for param in new_params_tensor]
-        return (new_params, 
-                len(self.trainloader),
-                {"partition_id": self.partition_id}
-            )
+
+        label_counts_dict = self._get_label_distribution(self.trainloader)
+        return self._fit_return(new_params, len(self.trainloader.dataset), 0.5, self.partition_id, json.dumps(label_counts_dict))

@@ -19,6 +19,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.fgfl_detection.value:
             from detections.fgfl import FGFLDetection
             self.detector = FGFLDetection(config)
+        elif self.method == DetectionNames.fdfl_detection.value:
+            from detections.fdfl import FDFLDetection
+            self.detector = FDFLDetection(config)
         elif self.method == DetectionNames.rffl_detection.value:
             # RFFL handles the detection itself
             self.detector = None
@@ -42,12 +45,12 @@ class DetectionHandler:
         
         self.detector.set_aggregated_global_model(aggregated_global_model)
 
-    def detect_anomalies(self, server_round, client_ids, client_updates, global_model):
+    def detect_anomalies(self, server_round, client_ids, client_updates, client_metrics, global_model):
         if self.method is None:
             # no filtering
             return client_ids
         # Filter client updates
-        return self.detector.detect(server_round, client_ids, client_updates, global_model)
+        return self.detector.detect(server_round, client_ids, client_updates, client_metrics, global_model)
 
 class SampleDetection(Detection):
     """

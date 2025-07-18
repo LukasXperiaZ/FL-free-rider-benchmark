@@ -39,7 +39,7 @@ class DAGMMDetection(Detection):
         
             self.model = self._load_model()
 
-    def detect(self, server_round, client_ids, client_updates, global_model):
+    def detect(self, server_round, client_ids, client_updates, client_metrics, global_model):
         if self.do_data_collection:
             self._perform_data_collection(client_ids, client_updates, global_model)
             return client_ids

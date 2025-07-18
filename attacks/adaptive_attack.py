@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from flwr.common import ArrayRecord
 import random
+import json
 
 class AdaptiveAttack(AdvancedDeltaWeightsAttack):
     """
@@ -77,7 +78,5 @@ class AdaptiveAttack(AdvancedDeltaWeightsAttack):
         # Set the current parameters as the previous for the next round
         self._save_params(key, parameters)
 
-        return (new_params, 
-                len(self.trainloader),
-                {"partition_id": self.partition_id}
-            )
+        label_counts_dict = self._get_label_distribution(self.trainloader)
+        return self._fit_return(new_params, len(self.trainloader.dataset), 0.5, self.partition_id, json.dumps(label_counts_dict))

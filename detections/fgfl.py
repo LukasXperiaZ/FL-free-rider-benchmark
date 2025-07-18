@@ -2,7 +2,6 @@ from detections.detection import DetectionAfterAggregation
 from flwr.common import parameters_to_ndarrays
 import numpy as np
 
-
 class FGFLDetection(DetectionAfterAggregation):
     def __init__(self, config):
         self.config = config
@@ -11,8 +10,11 @@ class FGFLDetection(DetectionAfterAggregation):
     def set_aggregated_global_model(self, aggregated_global_model):
         self.aggregated_global_model = aggregated_global_model
 
-    def detect(self, server_round, client_ids, client_updates, global_model):
+    def detect(self, server_round, client_ids, client_updates, client_metrics, global_model):
         G_t_1  = parameters_to_ndarrays(global_model)
+
+        if not self.aggregated_global_model:
+            raise RuntimeError("'set_aggregated_global_model' has to be called before detect() is called!")
         G_t = parameters_to_ndarrays(self.aggregated_global_model)
 
         # Represents G tidal of the paper
@@ -38,11 +40,10 @@ class FGFLDetection(DetectionAfterAggregation):
         contributions = []
         for b_i in gradient_distances:
             contribution = 1 - (b_i/b_h)
-            print(b_i, b_h, contribution)
+            #print(b_i, b_h, contribution)
             contributions.append(contribution)
 
         # Identify free riders
-        # TODO modify: Using an absolute threshold for the contribution works bad. Observe the printed values and do something else.
         kept_ids = []
         for contribution, client_id in zip(contributions, client_ids):
             if contribution > -2:

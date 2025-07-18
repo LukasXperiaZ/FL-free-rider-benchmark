@@ -2,7 +2,6 @@ from strategy import FedAvgWithDetections
 from flwr.common import logger, parameters_to_ndarrays
 
 class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
-
     def aggregate_fit(self, server_round, results, failures):
 
         ### First aggreagte
@@ -14,6 +13,7 @@ class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
         ### Then perform the detection
         client_updates = []
         client_ids = []
+        client_metrics = []
         flower_cid_to_partition_id = {}
         partition_id_to_flower_cid = {}
 
@@ -22,6 +22,7 @@ class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
             cid = client_proxy.cid
             client_updates.append(weights)
             client_ids.append(cid)
+            client_metrics.append(fit_res.metrics)
             # Ensure 'partition_id' is in metrics, provide a fallback if not
             partition_id = fit_res.metrics.get("partition_id", "UNKNOWN_PARTITION_ID")
             flower_cid_to_partition_id[cid] = partition_id
@@ -29,7 +30,7 @@ class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
   
         partition_ids = [flower_cid_to_partition_id[cid] for cid in client_ids]
         # Detect anomalies
-        kept_partition_ids = self.detection_handler.detect_anomalies(server_round, partition_ids, client_updates, self.global_model)
+        kept_partition_ids = self.detection_handler.detect_anomalies(server_round, partition_ids, client_updates, client_metrics, self.global_model)
         kept_client_ids = [partition_id_to_flower_cid[partition_id] for partition_id in kept_partition_ids]
 
         # Determine dropped clients

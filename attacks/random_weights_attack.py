@@ -1,8 +1,9 @@
 from task import set_weights
-from client_app import BenignClient
+from attacks.attack_client import AttackClient
 import torch
+import json
 
-class RandomWeightsAttackClient(BenignClient):
+class RandomWeightsAttackClient(AttackClient):
 
     def fit(self, parameters, config):
         set_weights(self.net, parameters)
@@ -15,7 +16,5 @@ class RandomWeightsAttackClient(BenignClient):
             rand_tensor = torch.empty(shape).uniform_(-R,R)
             new_params.append(rand_tensor.numpy())
 
-        return (new_params, 
-                len(self.trainloader),
-                {"partition_id": self.partition_id}
-            )
+        label_counts_dict = self._get_label_distribution(self.trainloader)
+        return self._fit_return(new_params, len(self.trainloader.dataset), 0.5, self.partition_id, json.dumps(label_counts_dict))

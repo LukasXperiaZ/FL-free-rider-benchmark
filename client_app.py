@@ -5,9 +5,11 @@ from task import Net, get_weights, load_data, set_weights, test, train
 from attacks.attack_names import AttackNames
 
 from flwr.client import ClientApp, NumPyClient
-from flwr.common import Array, ArrayRecord, Context, RecordDict
+from flwr.common import Context, RecordDict
+from collections import Counter
 
 import yaml
+import json
 
 # Load malicious client IDs from file
 with open("./config/malicious_clients.yaml", "r") as f:
@@ -57,13 +59,39 @@ class BenignClient(NumPyClient):
             device=self.device,
         )
 
+        label_counts_dict = self._get_label_distribution(self.trainloader)
         # Return locally-trained model and metrics
+        return self._fit_return(get_weights(self.net), len(self.trainloader.dataset), train_loss, self.partition_id, json.dumps(label_counts_dict))
+    
+    def _fit_return(self, weights, n_samples, train_loss, partition_id, label_counts):
         return (
-            get_weights(self.net),
-            len(self.trainloader.dataset),
+            weights,
+            n_samples,
             {"train_loss": train_loss,
-             "partition_id": self.partition_id},
+             "partition_id": partition_id,
+             "label_counts": label_counts},
         )
+    
+    def _get_label_distribution(self, trainloader):
+        """
+        Computes the data distribution (counts of samples per class) from a trainloader.
+
+        Args:
+            trainloader (torch.utils.data.DataLoader):  The DataLoader for your training data.
+                                                        Assumes that each batch yields (data, labels).
+
+        Returns:
+            labels, amounts:   Return a list containing all labels and a list containing the corresponding amounts of samples for that label.
+        """
+        class_counts = Counter()
+
+        for _, label in enumerate(trainloader):
+            label_tensor = label['label']
+            class_counts.update(label_tensor.tolist())
+
+        counts_dict = dict(class_counts)
+
+        return counts_dict
 
 
     """ def evaluate(self, parameters, config):
