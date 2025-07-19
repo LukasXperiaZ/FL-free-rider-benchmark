@@ -56,7 +56,7 @@ def _strong_faking(trainloader):
     counts_dict = dict(class_counts)
 
     # Assume that an attacker can estimate the mean and std of the amounts of samples other clients may have per class.
-    np_array = np.array(counts_dict.values())
+    np_array = np.array(list(counts_dict.values()))
     mean = np.mean(np_array)
     std = np.std(np_array, ddof=1)
 

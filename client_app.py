@@ -81,7 +81,8 @@ class BenignClient(NumPyClient):
                                                         Assumes that each batch yields (data, labels).
 
         Returns:
-            labels, amounts:   Return a list containing all labels and a list containing the corresponding amounts of samples for that label.
+            counts_dict:    Return a dictionary mapping from label to amount
+                            E.g.: {3: 6131, 7: 6265, 1: 6742, 6: 5918, 4: 5842, 2: 5958, 9: 5949, 0: 5923, 5: 5421, 8: 5851}
         """
         class_counts = Counter()
 
