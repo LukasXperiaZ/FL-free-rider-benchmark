@@ -10,4 +10,6 @@ class DetectionNames(Enum):
     fgfl_detection = "fgfl"
     fdfl_detection = "fdfl"
 
+    viceroy_detection = "viceroy"
+
     rffl_detection = "rffl"

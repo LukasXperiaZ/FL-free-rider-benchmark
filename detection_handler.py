@@ -22,6 +22,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.fdfl_detection.value:
             from detections.fdfl import FDFLDetection
             self.detector = FDFLDetection(config)
+        elif self.method == DetectionNames.viceroy_detection.value:
+            from detections.viceroy_detection import ViceroyDetection
+            self.detector = ViceroyDetection(config)
         elif self.method == DetectionNames.rffl_detection.value:
             # RFFL handles the detection itself
             self.detector = None
