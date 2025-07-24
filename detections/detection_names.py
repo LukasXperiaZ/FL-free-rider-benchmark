@@ -12,4 +12,6 @@ class DetectionNames(Enum):
 
     viceroy_detection = "viceroy"
 
+    wef_detection = "wef"
+
     rffl_detection = "rffl"

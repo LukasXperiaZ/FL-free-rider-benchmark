@@ -3,7 +3,6 @@ from flwr.common import parameters_to_ndarrays
 import numpy as np
 from detections.gradient_scaling_mitigation_algorithms.fools_gold import FoolsGold
 from typing import Dict
-import pickle
 
 class ViceroyDetection(Detection):
     def __init__(self, config):

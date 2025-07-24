@@ -25,6 +25,9 @@ class DetectionHandler:
         elif self.method == DetectionNames.viceroy_detection.value:
             from detections.viceroy_detection import ViceroyDetection
             self.detector = ViceroyDetection(config)
+        elif self.method == DetectionNames.wef_detection.value:
+            from detections.wef_detection import WEFDetection
+            self.detector = WEFDetection(config)
         elif self.method == DetectionNames.rffl_detection.value:
             # RFFL handles the detection itself
             self.detector = None
