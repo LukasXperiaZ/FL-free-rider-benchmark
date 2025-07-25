@@ -1,16 +1,30 @@
 from strategy import FedAvgWithDetections
-from flwr.common import logger, parameters_to_ndarrays
+from logging import WARNING
+from flwr.common import (
+    EvaluateIns,
+    EvaluateRes,
+    FitIns,
+    FitRes,
+    MetricsAggregationFn,
+    NDArrays,
+    Parameters,
+    Scalar,
+    ndarrays_to_parameters,
+    parameters_to_ndarrays,
+)
+from flwr.common.logger import log
+import numpy as np
+from functools import partial, reduce
 
-class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
+class WEF(FedAvgWithDetections):
+    """
+    A class that behaves like FedAvgWithDetections but implements the custom behavior of WEF.
+    """
+
+    def __init__(self, run_config, use_wandb, detection_handler, *args, **kwargs):
+        super().__init__(run_config, use_wandb, detection_handler, *args, **kwargs)
+
     def aggregate_fit(self, server_round, results, failures):
-
-        ### First aggreagte
-        parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
-
-        ### Then provide the detection the aggregated global model.
-        self.detection_handler.set_aggregated_global_model(parameters_aggregated)
-
-        ### Then perform the detection
         client_updates = []
         client_ids = []
         client_metrics = []
@@ -33,13 +47,21 @@ class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
         kept_partition_ids = self.detection_handler.detect_anomalies(server_round, partition_ids, client_updates, client_metrics, self.global_model)
         kept_client_ids = [partition_id_to_flower_cid[partition_id] for partition_id in kept_partition_ids]
 
+        # Filter results
+        filtered_results = [
+            (client_proxy, fit_res)
+            for client_proxy, fit_res in results
+            if client_proxy.cid in kept_client_ids
+        ]
+
         # Determine dropped clients
         dropped_ids = set(client_ids) - set(kept_client_ids)
-        self.banned_client_ids.update(dropped_ids)
-
         dropped_partition_ids = set([flower_cid_to_partition_id[cid] for cid in dropped_ids])
         self.newly_detected_FR_partition_ids = dropped_partition_ids
         self.banned_partition_ids.update(dropped_partition_ids)
+
+        # Important:    We do not update self.banned_client_ids and self.banned_partition_ids since the original behavior would be to perform
+        #               a separate aggregation for benign clients and free riders.
 
         assert len(dropped_ids) == len(dropped_partition_ids)
 
@@ -48,10 +70,9 @@ class FedAvgWithDetectionsAfterAggregation(FedAvgWithDetections):
         else:
             print(f"[Round {server_round}] No clients dropped.")
 
-        print(f"All anomalous clients detected and removed:\t{sorted(list(self.banned_partition_ids))}")
+        print(f"All anomalous clients detected:\t{sorted(list(self.banned_partition_ids))}")
 
-        # Update the global model        
+        # Continue with filtered results
+        parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, filtered_results, failures)
         self.global_model = parameters_aggregated
-
-        # TODO CHANGE
         return parameters_aggregated, metrics_aggregated

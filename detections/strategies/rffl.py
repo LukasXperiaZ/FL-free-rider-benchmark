@@ -82,6 +82,7 @@ class RFFL(FedAvgWithDetections):
 
         self.banned_client_ids.update(set(dropped_client_ids))
 
+        self.newly_detected_FR_partition_ids = dropped_partition_ids
         if dropped_partition_ids:
             print(f"[Round {server_round}] Dropped clients (anomalous):\t{sorted(list(dropped_partition_ids))}")
         else:

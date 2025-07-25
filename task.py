@@ -164,13 +164,13 @@ def apply_test_transforms(batch):
     return apply_eval_transforms(batch)
 
 
-def create_run_dir(config: UserConfig) -> Path:
+def create_run_dir(config: UserConfig, run_name) -> Path:
     """Create a directory where to save results from this run."""
     # Create output directory given current timestamp
     current_time = datetime.now()
     run_dir = current_time.strftime("%Y-%m-%d/%H-%M-%S")
     # Save path is based on the current directory
-    save_path = Path.cwd() / f"outputs/{run_dir}"
+    save_path = Path.cwd() / f"outputs/{run_name}/{run_dir}"
     save_path.mkdir(parents=True, exist_ok=False)
 
     # Save run config as json

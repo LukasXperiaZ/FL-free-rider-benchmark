@@ -38,6 +38,7 @@ class FedAvgWithDetectionsBeforeAggregation(FedAvgWithDetections):
         self.banned_client_ids.update(dropped_ids)
 
         dropped_partition_ids = set([flower_cid_to_partition_id[cid] for cid in dropped_ids])
+        self.newly_detected_FR_partition_ids = dropped_partition_ids
         self.banned_partition_ids.update(dropped_partition_ids)
 
         assert len(dropped_ids) == len(dropped_partition_ids)

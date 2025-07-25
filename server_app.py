@@ -133,6 +133,19 @@ def server_fn(context: Context):
             evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
             evaluate_metrics_aggregation_fn=weighted_average,
         )
+    elif detection_method == DetectionNames.wef_detection.value:
+        from detections.strategies.wef import WEF
+        strategy = WEF(
+            run_config=context.run_config,
+            use_wandb=context.run_config["use-wandb"],
+            detection_handler=detection_handler,
+            fraction_fit=fraction_fit,
+            fraction_evaluate=fraction_eval,
+            initial_parameters=parameters,
+            #on_fit_config_fn=on_fit_config,
+            evaluate_fn=gen_evaluate_fn(testloader, device=server_device),
+            evaluate_metrics_aggregation_fn=weighted_average,
+        )
     elif detection_handler.after_aggregation:
         # Perform the detection after the aggregation step
         strategy = FedAvgWithDetectionsAfterAggregation(

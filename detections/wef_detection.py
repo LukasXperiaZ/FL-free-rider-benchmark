@@ -10,6 +10,7 @@ class WEFDetection(Detection):
         self.wef_matrix = {}
         # A dict mapping from client ids to their previous penultimate layer (used for calculating how weights change)
         self.w_t = {}
+        self.epsilon = config.get("epsilon")
 
     def detect(self, server_round, client_ids, client_updates, client_metrics, global_model):
         global_model_layers = parameters_to_ndarrays(global_model)
@@ -109,11 +110,10 @@ class WEFDetection(Detection):
         for i in client_ids:
             Dev[i] = dis_devs[i]/dis_dev_sum + cos_devs[i]/cos_dev_sum + avg_devs[i]/avg_dev_sum
 
-        print("\nDeviations:\n", Dev, "\n")
+        #print("\nDeviations:\n", Dev, "\n")
         # 3.1 Calculate the reputation threshold
-        epsilon = 0.05
-        xi = np.max(list(Dev.values())) - epsilon
-        print("xi: ", xi)
+        xi = np.max(list(Dev.values())) - self.epsilon
+        #print("xi: ", xi)
 
         # 3.2 Filter clients
         benign_clients = [cid for cid in client_ids if Dev[cid] < xi]
