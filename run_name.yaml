@@ -1,1 +1,1 @@
-RUN_NAME: mnist--n=10--30%--advanced_delta_weights--wef
+RUN_NAME: cifar10--n=10--10%--no_attack--no_detection

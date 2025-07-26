@@ -145,6 +145,8 @@ def client_fn(context: Context):
         elif attack_method == AttackNames.adaptive_attack.value:
             from attacks.adaptive_attack import AdaptiveAttack
             return AdaptiveAttack(net, client_state, trainloader, valloader, local_epochs, partition_id, attack_config).to_client()
+        elif attack_method == AttackNames.no_attack.value:
+            return BenignClient(net, client_state, trainloader, valloader, local_epochs, partition_id=partition_id, config=attack_config).to_client()
         else:
             raise RuntimeError(f"Attack method '{attack_method}' not known!")
 

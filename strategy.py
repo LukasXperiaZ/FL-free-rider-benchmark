@@ -12,6 +12,7 @@ from flwr.common.typing import UserConfig
 from flwr.server.strategy import FedAvg
 from detection_handler import DetectionHandler
 import yaml
+import time
 
 with open("run_name.yaml", "r") as f:
     run_name = yaml.safe_load(f).get("RUN_NAME")
@@ -69,6 +70,8 @@ class FedAvgWithDetections(FedAvg):
 
         self.round_metrics = []
 
+        self.start_time = time.time()
+
 
     def aggregate_fit(self, server_round, results, failures):
         if not self.num_clients:
@@ -120,14 +123,14 @@ class FedAvgWithDetections(FedAvg):
         """
         if accuracy > self.best_acc_so_far:
             self.best_acc_so_far = accuracy
-            logger.log(INFO, "💡 New best global model found: %f", accuracy)
+            #logger.log(INFO, "💡 New best global model found: %f", accuracy)
             # You could save the parameters object directly.
             # Instead we are going to apply them to a PyTorch
             # model and save the state dict.
             # Converts flwr.common.Parameters to ndarrays
-            ndarrays = parameters_to_ndarrays(parameters)
-            model = Net()
-            set_weights(model, ndarrays)
+            #ndarrays = parameters_to_ndarrays(parameters)
+            #model = Net()
+            #set_weights(model, ndarrays)
             # Save the PyTorch model (not needed!)
             #file_name = f"model_state_acc_{accuracy}_round_{round}.pth"
             #torch.save(model.state_dict(), self.save_path / file_name)
@@ -182,6 +185,17 @@ class FedAvgWithDetections(FedAvg):
 
         This method should be called after the last aggregation was performed.
         """
+        # Record the elapsed time
+        end_time = time.time()
+        time_total = end_time - self.start_time
+        time_per_iteration = time_total/self.num_rounds
+        with open(f"{self.save_path}/time.json", "w", encoding="utf-8") as fp:
+            json.dump({
+                "time_per_iteration": time_per_iteration,
+                "time_total": time_total
+                }, fp)
+
+
         # Save the metrics of each round to disk.
         with open(f"{self.save_path}/round_metrics.json", "w", encoding="utf-8") as fp:
             json.dump([round_metric.get_dict() for round_metric in self.round_metrics], fp)      
@@ -196,8 +210,8 @@ class FedAvgWithDetections(FedAvg):
         undetected_FR = [id for id in malicious_clients if id not in self.banned_partition_ids]
         FN = len(undetected_FR)
 
-        Precision = TP / (TP + FP)
-        Recall = TP / (TP + FN)
+        Precision = TP / (TP + FP) if TP != 0 else 0
+        Recall = TP / (TP + FN) if TP != 0 else 0
 
         with open(f"{self.save_path}/Precision_Recall.json", "w", encoding="utf-8") as fp:
             json.dump({
