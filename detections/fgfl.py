@@ -5,6 +5,7 @@ import numpy as np
 class FGFLDetection(DetectionAfterAggregation):
     def __init__(self, config):
         self.config = config
+        self.stds = config.get("stds")
         self.aggregated_global_model = None
 
     def set_aggregated_global_model(self, aggregated_global_model):
@@ -40,13 +41,16 @@ class FGFLDetection(DetectionAfterAggregation):
         contributions = []
         for b_i in gradient_distances:
             contribution = 1 - (b_i/b_h)
-            #print(b_i, b_h, contribution)
+            #print(contribution)
             contributions.append(contribution)
 
         # Identify free riders
+        mean_contribution = np.mean(contributions)
+        std_contribution = np.std(contributions)
+        threshold = mean_contribution - self.stds*std_contribution
         kept_ids = []
         for contribution, client_id in zip(contributions, client_ids):
-            if contribution > -2:
+            if contribution > threshold:
                 kept_ids.append(client_id)
         return kept_ids
 

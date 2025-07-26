@@ -173,8 +173,4 @@ def create_run_dir(config: UserConfig, run_name) -> Path:
     save_path = Path.cwd() / f"outputs/{run_name}/{run_dir}"
     save_path.mkdir(parents=True, exist_ok=False)
 
-    # Save run config as json
-    with open(f"{save_path}/run_config.json", "w", encoding="utf-8") as fp:
-        json.dump(config, fp)
-
     return save_path, run_dir

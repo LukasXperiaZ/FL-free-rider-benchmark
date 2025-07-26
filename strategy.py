@@ -42,6 +42,8 @@ class FedAvgWithDetections(FedAvg):
 
         # Create a directory where to save results from this run
         self.save_path, self.run_dir = create_run_dir(run_config, run_name)
+        self.run_config = run_config
+
         self.use_wandb = use_wandb
         # Initialise W&B if set
         if use_wandb:
@@ -187,6 +189,7 @@ class FedAvgWithDetections(FedAvg):
         """
         # Record the elapsed time
         end_time = time.time()
+        print("######## Saving metrics ########")
         time_total = end_time - self.start_time
         time_per_iteration = time_total/self.num_rounds
         with open(f"{self.save_path}/time.json", "w", encoding="utf-8") as fp:
@@ -194,7 +197,19 @@ class FedAvgWithDetections(FedAvg):
                 "time_per_iteration": time_per_iteration,
                 "time_total": time_total
                 }, fp)
+            
+        # Store the run configuration
+        # Save run config as json
+        with open(f"{self.save_path}/run_config.json", "w", encoding="utf-8") as fp:
+            json.dump(self.run_config, fp)
 
+        # Save the malicious and detected clients.
+        with open(f"{self.save_path}/clients.json", "w", encoding="utf-8") as fp:
+            json.dump({
+                "num_clients": self.num_clients,
+                "malicious_clients": malicious_clients,
+                "detected_clients": list(self.banned_partition_ids)
+                }, fp)
 
         # Save the metrics of each round to disk.
         with open(f"{self.save_path}/round_metrics.json", "w", encoding="utf-8") as fp:
@@ -221,6 +236,8 @@ class FedAvgWithDetections(FedAvg):
                 "Precision": Precision,
                 "Recall": Recall
             }, fp)
+
+        print("######## Metrics saved! ########")
     
 
 from typing import List
