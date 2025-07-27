@@ -1,1 +1,1 @@
-RUN_NAME: mnist--n=100--10%--random_weights--fgfl
+RUN_NAME: cifar10--n=10--0%--no_attack--delta_dagmm

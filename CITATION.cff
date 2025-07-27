@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: FL-free-rider-benchmark
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Lukas
+    family-names: Fink
+    email: lukas.fink.at@gmail.com
+    affiliation: TU Vienna
+repository-code: 'https://github.com/LukasXperiaZ/FL-free-rider-benchmark'
+abstract: >-
+  A Flower framework for benchmarking free rider attacks and
+  detections in federated learning.
+keywords:
+  - Federated Learning
+  - Free rider
+  - Attack
+  - Detection
+license: MIT

@@ -44,10 +44,10 @@ extras = [ "vision",]
 version = "^0.5.0"
 
 [tool.flwr.federations.local-sim.options]
-num-supernodes = 100
+num-supernodes = 10
 
 [tool.flwr.federations.local-sim-gpu.options]
-num-supernodes = 100
+num-supernodes = 10
 
 [tool.hatch.build.targets.wheel]
 packages = [ ".",]
@@ -58,4 +58,4 @@ num-gpus = 0.0
 
 [tool.flwr.federations.local-sim-gpu.options.backend.client-resources]
 num-cpus = 1
-num-gpus = 0.041666666666666664
+num-gpus = 0.1
