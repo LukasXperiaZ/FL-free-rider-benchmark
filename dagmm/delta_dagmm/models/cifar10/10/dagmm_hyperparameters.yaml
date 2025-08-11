@@ -1,0 +1,8 @@
+dimensions:
+- 12810
+- 2048
+- 512
+- 128
+estimation_hidden_size: 10
+latent_dim: 32
+n_gmm: 2

@@ -111,7 +111,8 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
             l_1 = delta_0_1_flat.norm(p=2).item()
 
             lambda_ = np.log((l_t/l_1) ** (1/(t-1)))
-            C = 0.5 # TODO find a good value for C.
+            # ----- HYPERPARAMETER ----- C
+            C = 0.5
             E_cos_beta = C**2 / (C**2 + np.e**(2*lambda_*t)) # starts at 1 and converges to 0
             n = self.config.get("n")
             U_f_theta_flat = torch.cat([t.flatten() for t in U_f_theta])
@@ -119,8 +120,8 @@ class AdvancedFreeRiderAttack(AdvancedDeltaWeightsAttack):
             # Calculate |φ(t)|
             phi_t_l2 = np.sqrt(n**2 / (n + (n**2 - n)*E_cos_beta) - 1) * U_f_theta_l2   # Starts at ~0.9 and goes down to ~0.2
 
-            # HYPERPARAMETER: Percentage of parameters to add Gaussian noise to.
-            d_frac = 0.1 # TODO find a good value for d.
+            # ----- HYPERPARAMETER ----- d_frac: Percentage of parameters to add Gaussian noise to.
+            d_frac = 0.7
             n_parameters = 0
             for tensor in U_f_theta:
                 n_params = tensor.numel()
