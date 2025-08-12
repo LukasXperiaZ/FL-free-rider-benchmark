@@ -22,17 +22,17 @@ from dataset_names.dataset_names import DatasetNames
 # --- --- ---   --- --- --- --- ---   --- --- ---
 
 # Dataset (mnist or cifar10)
-# TODO extract the DatasetNames enum entry from the argument string
-DATASET = sys.argv[0]
+DATASET = DatasetNames(sys.argv[1])
 
 # Number of clients
-NUM_CLIENTS = sys.argv[1]
+NUM_CLIENTS = int(sys.argv[2])
 
 # Number of federation rounds
 NUM_ROUNDS = 20
 
 # Percentage of malicious clients
-PERCENT_MALICIOUS = sys.argv[2]
+PERCENT_MALICIOUS = float(sys.argv[3])
+print(f"PERCENT_MALICIOUS: {PERCENT_MALICIOUS}")
 
 # Fraction of the clients to choose for training in one round. We always use 1.0
 FRACTION_FIT = 1.0
@@ -41,10 +41,10 @@ FRACTION_FIT = 1.0
 USE_WANDB = False
 
 # Attack method to use
-ATTACK_METHOD = sys.argv[3]
+ATTACK_METHOD = AttackNames(sys.argv[4])
 
 # Detection method to use
-DETECTION_METHOD = sys.argv[4]
+DETECTION_METHOD = DetectionNames(sys.argv[5])
 
 # --- --- ---   --- --- --- --- ---   --- --- ---
 # --- --- ---   --- --- --- --- ---   --- --- ---

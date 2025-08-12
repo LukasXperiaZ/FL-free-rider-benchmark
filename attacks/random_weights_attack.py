@@ -11,8 +11,9 @@ class RandomWeightsAttackClient(AttackClient):
         # Random Weights attack
         R = self.config.get("R")
         new_params = []
-        for p in self.net.parameters():
-            shape = p.data.shape
+        for p in parameters:
+            param_tensor = torch.from_numpy(p)
+            shape = param_tensor.shape
             rand_tensor = torch.empty(shape).uniform_(-R,R)
             new_params.append(rand_tensor.numpy())
 
