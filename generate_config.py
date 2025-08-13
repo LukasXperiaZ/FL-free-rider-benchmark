@@ -127,8 +127,7 @@ elif DETECTION_METHOD.value == DetectionNames.viceroy_detection.value:
                                                                 # and 1 a very unsuspicious one.
 # ________________________________________________________________________________________________________________________________________________
 elif DETECTION_METHOD.value == DetectionNames.wef_detection.value:
-    epsilon = 0.02 if NUM_CLIENTS == 10 else 0.01
-    ADDITIONAL_DETECTION_CONFIG["epsilon"] = epsilon    # Determines how strict the threshold distinguishes between benign clients and free riders.
+    ADDITIONAL_DETECTION_CONFIG["epsilon"] = 0.02       # Determines how strict the threshold distinguishes between benign clients and free riders.
                                                         # Choosing a low value results in low FP but may miss free riders whereas a high value may results in FPs.
 # ________________________________________________________________________________________________________________________________________________
 print("Using the detection method: ", DETECTION_METHOD.value)
