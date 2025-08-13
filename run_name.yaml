@@ -1,1 +1,1 @@
-RUN_NAME: mnist--n=10--70%--advanced_free_rider--delta_dagmm
+RUN_NAME: mnist--n=100--70%--advanced_delta_weights--viceroy

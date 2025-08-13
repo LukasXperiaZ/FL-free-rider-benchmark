@@ -1,6 +1,7 @@
 from collections import Counter
 import numpy as np
 import yaml
+import random
 
 with open("./config/fake_label_distribution.yaml", "r") as f:
     fake_label_dist_config = yaml.safe_load(f)
@@ -30,8 +31,9 @@ def _weak_faking(trainloader):
     counts_dict = dict(class_counts)
 
     # Assume that an attacker makes just an educated guess about mean and std.
-    mean = 50
-    std = 10
+    # Simulate that different attackers guess different things.
+    mean = random.choice([30, 50, 70])
+    std = random.choice([5, 10, 15])
 
     # Estimate the amount of class lables using the mean and std.
     est_counts_dict = {}

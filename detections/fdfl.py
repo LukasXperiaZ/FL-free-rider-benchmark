@@ -60,6 +60,7 @@ class FDFLDetection(Detection):
         # 1. Perform K-means clustering on the weights of the client models
         n_clusters = self.config.get("n_clusters")
         clients_per_cluster = self._k_means(client_ids, client_updates, n_clusters)
+        print(clients_per_cluster)
 
         # 2. For each cluster, check for each client if its submitted data distribution is similar or different to other clients.
         tau = self.config.get("tau")
@@ -74,12 +75,13 @@ class FDFLDetection(Detection):
                         lambda_i = client_ids_to_label_counts[c_i]
                         lambda_j = client_ids_to_label_counts[c_j]
                         alpha_i_j = self._compute_cosine_similarity(lambda_i, lambda_j)
-                        
+
                         if alpha_i_j < tau:
                             flag[c_i].append(alpha_i_j)
                 
                 if len(flag[c_i]) < n_clusters-1:
                     kept_ids.append(c_i)
+        print("Flags: ", flag)
 
         return kept_ids
 

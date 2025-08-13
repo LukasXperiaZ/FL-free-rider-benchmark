@@ -44,10 +44,12 @@ class FGFLDetection(DetectionAfterAggregation):
             #print(contribution)
             contributions.append(contribution)
 
+        #print("contributions: ", contributions)
         # Identify free riders
-        mean_contribution = np.mean(contributions)
+        median_contribution = np.median(contributions)
         std_contribution = np.std(contributions)
-        threshold = mean_contribution - self.stds*std_contribution
+        threshold = median_contribution - self.stds*std_contribution
+        #print("threshold: ", threshold)
         kept_ids = []
         for contribution, client_id in zip(contributions, client_ids):
             if contribution > threshold:

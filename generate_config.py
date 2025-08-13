@@ -102,13 +102,13 @@ elif DETECTION_METHOD.value == DetectionNames.delta_dagmm_detection.value:
 elif DETECTION_METHOD.value == DetectionNames.rffl_detection.value:
     ADDITIONAL_DETECTION_CONFIG["alpha"] = 0.95
     ADDITIONAL_DETECTION_CONFIG["beta"] = 1/(3*NUM_CLIENTS)
-    ADDITIONAL_DETECTION_CONFIG["gamma"] = 0.5 if DATASET.value == "mnist" else 0.15  # TODO see if this values are good (0.5 for MNIST and 0.15 for CIFAR10 specified by the authors)
+    ADDITIONAL_DETECTION_CONFIG["gamma"] = 0.5 if DATASET.value == "mnist" else 0.15  # TODO see if these values are good (0.5 for MNIST and 0.15 for CIFAR10 specified by the authors)
 # ________________________________________________________________________________________________________________________________________________
 elif DETECTION_METHOD.value == DetectionNames.fgfl_detection.value:
-    ADDITIONAL_DETECTION_CONFIG["stds"] = 3    # The amount of standard deviations to substract from the mean. Higher -> higher precision, lower recall. Lower -> lower precision, higher recall
+    ADDITIONAL_DETECTION_CONFIG["stds"] = 2.1    # The amount of standard deviations to substract from the mean. Higher -> higher precision, lower recall. Lower -> lower precision, higher recall
 # ________________________________________________________________________________________________________________________________________________
 elif DETECTION_METHOD.value == DetectionNames.fdfl_detection.value:
-    ADDITIONAL_DETECTION_CONFIG["tau"] = 0.2    # If the cosine similarity of two submitted data distributions for two clients of the same cluster is smaller than tau,
+    ADDITIONAL_DETECTION_CONFIG["tau"] = 0.4    # If the cosine similarity of two submitted data distributions for two clients of the same cluster is smaller than tau,
                                                 # i.e. they are not very similar, the flag counter will be increased (if flag is very high, it will be marked as a free rider).
     ADDITIONAL_DETECTION_CONFIG["n_clusters"] = 5 if NUM_CLIENTS == 100 else 3       # Use 5 for 100 clients and 3 for 10 clients
     method = "weak"     # Perform either 'weak' or 'strong' imitation of label distributions.
@@ -130,7 +130,7 @@ elif DETECTION_METHOD.value == DetectionNames.wef_detection.value:
     epsilon = 0.02 if NUM_CLIENTS == 10 else 0.01
     ADDITIONAL_DETECTION_CONFIG["epsilon"] = epsilon    # Determines how strict the threshold distinguishes between benign clients and free riders.
                                                         # Choosing a low value results in low FP but may miss free riders whereas a high value may results in FPs.
-
+# ________________________________________________________________________________________________________________________________________________
 print("Using the detection method: ", DETECTION_METHOD.value)
 if "dagmm" in DETECTION_METHOD.value and ADDITIONAL_DETECTION_CONFIG and ADDITIONAL_DETECTION_CONFIG["do_data_collection"]:
     if PERCENT_MALICIOUS != 0.0 and ATTACK_METHOD != AttackNames.no_attack:

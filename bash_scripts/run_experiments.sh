@@ -51,7 +51,7 @@ for ATTACK in "${ATTACKS[@]}"; do
                 # Print the progress
                 # 4.2 Calculate and print the progress estimate
                 ELAPSED_TIME=$(( $(date +%s) - START_TIME ))
-                if [[ $CURRENT_EXPERIMENT -gt -1 ]]; then
+                if [[ $CURRENT_EXPERIMENT -gt 0 ]]; then
                     AVG_TIME=$(( ELAPSED_TIME / CURRENT_EXPERIMENT ))
                     REMAINING_TIME=$(( AVG_TIME * (TOTAL_EXPERIMENTS - CURRENT_EXPERIMENT) ))
                     REMAINING_MINS=$(( REMAINING_TIME / 60 ))
