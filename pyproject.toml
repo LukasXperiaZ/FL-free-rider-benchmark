@@ -28,12 +28,12 @@ serverapp = "server_app:app"
 clientapp = "client_app:app"
 
 [tool.flwr.app.config]
-num-server-rounds = 20
+num-server-rounds = 40
 fraction-fit = 1.0
 fraction-evaluate = 0.0
 local-epochs = 1
 server-device = "cuda"
-use-wandb = false
+use-wandb = true
 
 [tool.poetry.dependencies.flwr]
 extras = [ "simulation",]

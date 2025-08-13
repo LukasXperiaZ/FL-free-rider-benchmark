@@ -28,7 +28,7 @@ DATASET = DatasetNames(sys.argv[1])
 NUM_CLIENTS = int(sys.argv[2])
 
 # Number of federation rounds
-NUM_ROUNDS = 20
+NUM_ROUNDS = 20 if DATASET == DatasetNames.mnist or (DATASET == DatasetNames.cifar10 and NUM_CLIENTS == 10) else 40
 
 # Percentage of malicious clients
 PERCENT_MALICIOUS = float(sys.argv[3])
