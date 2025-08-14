@@ -1,1 +1,1 @@
-RUN_NAME: cifar10--n=100--0%--no_attack--no_detection
+RUN_NAME: cifar10--n=10--10%--random_weights--delta_dagmm

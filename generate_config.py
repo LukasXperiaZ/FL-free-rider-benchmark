@@ -90,7 +90,7 @@ elif DETECTION_METHOD.value == DetectionNames.delta_dagmm_detection.value:
 
     model_path = "./dagmm/delta_dagmm/models/" + DATASET.value + "/" + str(NUM_CLIENTS)
     ADDITIONAL_DETECTION_CONFIG["dagmm_threshold_path"] = model_path + "/dagmm_anomaly_threshold.yaml"
-    ADDITIONAL_DETECTION_CONFIG["dagmm_ignore_up_to"] = 2   # Does not perform the detection in the first x round(s). This is important for Delta-DAGMM since especially in the first iteration, the global model is randomly initialized by the server. Thus it is good to skip it.
+    ADDITIONAL_DETECTION_CONFIG["dagmm_ignore_up_to"] = 8 if NUM_CLIENTS == 100 and DATASET == DatasetNames.cifar10 else 2   # Does not perform the detection in the first x round(s). This is important for Delta-DAGMM since especially in the first iteration, the global model is randomly initialized by the server. Thus it is good to skip it.
     ADDITIONAL_DETECTION_CONFIG["dagmm_model_path"] =  model_path + "/model.pt"
     ADDITIONAL_DETECTION_CONFIG["dagmm_hyperparameters_path"] = model_path + "/dagmm_hyperparameters.yaml"
     ADDITIONAL_DETECTION_CONFIG["gmm_parameters_paths"] = {
