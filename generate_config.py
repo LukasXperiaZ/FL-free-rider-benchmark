@@ -105,7 +105,7 @@ elif DETECTION_METHOD.value == DetectionNames.rffl_detection.value:
     ADDITIONAL_DETECTION_CONFIG["gamma"] = 0.5 if DATASET.value == "mnist" else 0.15  # TODO see if these values are good (0.5 for MNIST and 0.15 for CIFAR10 specified by the authors)
 # ________________________________________________________________________________________________________________________________________________
 elif DETECTION_METHOD.value == DetectionNames.fgfl_detection.value:
-    ADDITIONAL_DETECTION_CONFIG["stds"] = 2.1    # The amount of standard deviations to substract from the mean. Higher -> higher precision, lower recall. Lower -> lower precision, higher recall
+    ADDITIONAL_DETECTION_CONFIG["stds"] = 2.1 if DATASET.value == DatasetNames.mnist.value else 2.8    # The amount of standard deviations to substract from the mean. Higher -> higher precision, lower recall. Lower -> lower precision, higher recall
 # ________________________________________________________________________________________________________________________________________________
 elif DETECTION_METHOD.value == DetectionNames.fdfl_detection.value:
     ADDITIONAL_DETECTION_CONFIG["tau"] = 0.4    # If the cosine similarity of two submitted data distributions for two clients of the same cluster is smaller than tau,

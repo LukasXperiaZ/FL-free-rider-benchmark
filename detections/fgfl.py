@@ -39,12 +39,12 @@ class FGFLDetection(DetectionAfterAggregation):
 
         # Compute the contributions (C_i)
         contributions = []
+        #print("Contributions:")
         for b_i in gradient_distances:
             contribution = 1 - (b_i/b_h)
             #print(contribution)
             contributions.append(contribution)
 
-        #print("contributions: ", contributions)
         # Identify free riders
         median_contribution = np.median(contributions)
         std_contribution = np.std(contributions)
