@@ -94,6 +94,8 @@ class FedAvgWithDetections(FedAvg):
         clients = client_manager.all()
         if len(clients) == 0:
             raise RuntimeError("No eligible clients available (all banned).")
+        elif len(clients) == 1:
+            raise RuntimeError("Only one client left - Federation learning failed!")
 
         return super().configure_fit(server_round, parameters, client_manager)
 

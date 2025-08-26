@@ -10,29 +10,41 @@ class FoolsGold(FedScale):
     The original implementation is at: https://github.com/DistributedML/FoolsGold/blob/master/ML/code/model_aggregator.py
     """
     def get_scaled_gradients(self, client_gradients, client_ids, debug=False):
+        # Flatten the gradients and store them in a single NumPy array
+        flattened_gradients = np.array([np.concatenate([w.flatten() for w in grad_i]) for grad_i in client_gradients])
+
         # First step: compute the cosine similarities
-        v = {}
-        cs_i_j = {}
-        for grad_i, i in zip(client_gradients, client_ids):
-            flattened_grad_i = np.concatenate([w.flatten() for w in grad_i])
 
-            cs_i_j[i] = {}
-            for grad_j, j in zip(client_gradients, client_ids):
-                if i != j:
-                    flattened_grad_j = np.concatenate([w.flatten() for w in grad_j])
-                    # Since we do not have feature importances, we calculate an unweighted cosine similarity.
-                    cosine_similarity_i_j = self._cosine_similarity(flattened_grad_i, flattened_grad_j)
-                    cs_i_j[i][j] = cosine_similarity_i_j
+        # Calculate the dot product of all gradient pairs (numerator)
+        dot_product_matrix = np.dot(flattened_gradients, flattened_gradients.T)
 
-            v[i] = max(cs_i_j[i].values())
+        # Calculate the L2 norm of each flattened gradient vector
+        norm_vector = np.linalg.norm(flattened_gradients, axis=1)
+
+        # Create an outer product of the norm vector to get the matrix of products of norms (denominator)
+        norm_product_matrix = np.outer(norm_vector, norm_vector)
+
+        # Add a small epsilon to avoid division by zero
+        norm_product_matrix[norm_product_matrix == 0] = 1e-9
+
+        # Compute the cosine similarity matrix by element-wise division
+        cosine_similarity_matrix = dot_product_matrix / norm_product_matrix
+
+        # Extract the maximum similarity for each client (v)
+        # We need to set the diagonal to a very low number to ignore self-similarity
+        np.fill_diagonal(cosine_similarity_matrix, -1)
+        v = np.max(cosine_similarity_matrix, axis=1)
+
+        v_dict = {client_id: val for client_id, val in zip(client_ids, v)}
+        cs_i_j = {client_ids[i]: {client_ids[j]: cosine_similarity_matrix[i, j] for j in range(len(client_ids))} for i in range(len(client_ids))}
 
         # Second step: scale the cosine similarities and initialize the weighting a
         a = {}
-        for grad_i, i in zip(client_gradients, client_ids):
-            for grad_j, j in zip(client_gradients, client_ids):
+        for i in client_ids:
+            for j in client_ids:
                 if i != j:
-                    if v[j] > v[i]:
-                        cs_i_j[i][j] = cs_i_j[i][j] * v[i] / v[j]
+                    if v_dict[j] > v_dict[i]:
+                        cs_i_j[i][j] = cs_i_j[i][j] * v_dict[i] / v_dict[j]
             
             # Clipping according to the official implementation
             a[i] = max(min(1 - max(cs_i_j[i].values()), 1), 0)
@@ -54,16 +66,3 @@ class FoolsGold(FedScale):
             return a, cs_i_j
         
         return a
-
-
-    def _cosine_similarity(self, flattened_grad_i, flattened_grad_j):
-        dot_product = np.dot(flattened_grad_i, flattened_grad_j)
-
-        norm_vec1 = np.linalg.norm(flattened_grad_i)
-        norm_vec2 = np.linalg.norm(flattened_grad_j)
-
-        if norm_vec1 == 0 or norm_vec2 == 0:
-            return 0.0
-    
-        similarity = dot_product / (norm_vec1 * norm_vec2)
-        return similarity

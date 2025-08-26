@@ -3,6 +3,7 @@ from flwr.common import parameters_to_ndarrays
 import numpy as np
 from detections.gradient_scaling_mitigation_algorithms.fools_gold import FoolsGold
 from typing import Dict
+import time
 
 class ViceroyDetection(Detection):
     def __init__(self, config):
@@ -44,8 +45,9 @@ class ViceroyDetection(Detection):
             client_gradients.append(gradient_c)
 
         # --- Viceroy detection ---
+        sorted_client_gradients = [client_gradients[client_ids.index(cid)] for cid in client_ids]
         # Update the reputation
-        H_t_1, R_t_1 = self._reputation_update(client_gradients, client_ids, self.H_t, self.R_t, self.omega, self.eta)
+        H_t_1, R_t_1 = self._reputation_update(sorted_client_gradients, client_ids, self.H_t, self.R_t, self.omega, self.eta)
 
         if self.first_round:
             # Set the reputation of the first round to 0.
@@ -54,10 +56,13 @@ class ViceroyDetection(Detection):
             for cid in client_ids:
                 R_t_1[cid] = 0.0
         
+        # Explicitly create sorted lists of gradients to ensure order
+        sorted_h_t_1_gradients = [H_t_1[cid] for cid in client_ids]
+
         # Scale the reputation with the scaling values of FedScale
         # Note: In the first round, both fed_scale values will be equal, since H_t_1 is equal to the client gradients of the first round.
-        fed_scale_h_t_1 = self._fed_scale(H_t_1.values(), client_ids)
-        fed_scale_grad_t_1 = self._fed_scale(client_gradients, client_ids)
+        fed_scale_h_t_1 = self._fed_scale(sorted_h_t_1_gradients, client_ids)
+        fed_scale_grad_t_1 = self._fed_scale(sorted_client_gradients, client_ids)
 
         p = {}
         for cid in client_ids:
@@ -66,7 +71,7 @@ class ViceroyDetection(Detection):
 
         # Update H_t and R_t
         self.H_t = H_t_1
-        self.R_t = R_t_1  
+        self.R_t = R_t_1
 
         if self.first_round:
             self.first_round = False
@@ -80,9 +85,12 @@ class ViceroyDetection(Detection):
 
     def _reputation_update(self, client_gradients, client_ids, H_t: Dict, R_t: Dict, omega, eta):
         """
-        Important assumption: client_gradients, client_ids and H_t.values() is all sorted in the same way!
+        Important assumption: client_gradients and client_ids is all sorted in the same way!
         """
-        p_i_H = self._fed_scale(H_t.values(), client_ids)
+        sorted_h_t_gradients = [self.H_t[cid] for cid in client_ids]
+
+        p_i_H = self._fed_scale(sorted_h_t_gradients, client_ids)
+
         if self.first_round:
             # In the first round, set the historical update weights to 0
             for cid in p_i_H.keys():

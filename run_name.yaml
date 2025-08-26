@@ -1,1 +1,1 @@
-RUN_NAME: cifar10--n=100--30%--advanced_free_rider--fgfl
+RUN_NAME: cifar10--n=10--10%--random_weights--viceroy
