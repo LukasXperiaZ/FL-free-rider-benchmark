@@ -118,11 +118,11 @@ elif DETECTION_METHOD.value == DetectionNames.fdfl_detection.value:
 elif DETECTION_METHOD.value == DetectionNames.viceroy_detection.value:
     ADDITIONAL_DETECTION_CONFIG["omega"] = 0.525    # History decay factor (value taken from the paper)
     ADDITIONAL_DETECTION_CONFIG["eta"] = 0.2        # Reputation update factor (value taken from the paper)
-    ADDITIONAL_DETECTION_CONFIG["kappa"] = 0.5 if DATASET.value == DatasetNames.mnist.value else 0.8      # Confidence parameter of FoolsGold.
+    ADDITIONAL_DETECTION_CONFIG["kappa"] = 0.5 if DATASET.value == DatasetNames.mnist.value else 0.9      # Confidence parameter of FoolsGold.
     ADDITIONAL_DETECTION_CONFIG["skip_first_round"] = True  # Specify if the first round should be skipped. 
                                                             # This is a good practice since the initial global model is randomly initialized.
                                                             # Thus, the gradient calculation can be messy.
-    ADDITIONAL_DETECTION_CONFIG["free_rider_threshold"] = 0.1 if DATASET.value == DatasetNames.mnist.value else 0.05   # Specify the threshold that separates benign clients from free riders.
+    ADDITIONAL_DETECTION_CONFIG["free_rider_threshold"] = 0.1 if DATASET.value == DatasetNames.mnist.value else 0.01   # Specify the threshold that separates benign clients from free riders.
                                                                 # The values it is compared to range from 0 to 1, where 0 denotes a very suspicious client
                                                                 # and 1 a very unsuspicious one.
 # ________________________________________________________________________________________________________________________________________________

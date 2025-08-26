@@ -47,41 +47,34 @@ class WEFDetection(Detection):
 
             assert len(vars_client) == len(WEF_matrix_client)
 
-            for i, var in enumerate(vars_client):
-                if var > threshold_client:
-                    # Increment the WEF matrix entry
-                    WEF_matrix_client[i] += 1
+            # Increment the WEF matrix entries
+            WEF_matrix_client[vars_client > threshold_client] += 1
 
-        # 3. Separate clients (O(n^2), n=|clients|)
-        Dev = {}
-        dis = {}
-        cos = {}
-        avg = {}
-        for i in client_ids:
-            wef_i = self.wef_matrix[i]
-            # Sum of all euclidean distances
-            dis_i = 0
-            # Sum of all cosine distances
-            cos_i = 0
-            for j in client_ids:
-                if i != j:
-                    wef_j = self.wef_matrix[j]
+        # 3. Separate clients (O(n^2), n=|clients|), but we perform vectorized operations.
+        wef_list = [self.wef_matrix[cid] for cid in client_ids]
+        wef_matrix_np = np.array(wef_list)
 
-                    # 3.1 Calculate the Euclidean distance
-                    euclidean = np.linalg.norm(wef_i - wef_j)
-                    dis_i += euclidean
-                    
-                    # 3.2 Calculate the cosine similarity
-                    cosine = np.dot(wef_i, wef_j) / (np.linalg.norm(wef_i)*np.linalg.norm(wef_j))
-                    cos_i += cosine
+        # 3.1 Calcualate Euclidean distances
+        wef_norm_sq = np.sum(wef_matrix_np**2, axis=1, keepdims=True)
+        dot_product_matrix = np.dot(wef_matrix_np, wef_matrix_np.T)
+        euclidean_dist_matrix = np.sqrt(wef_norm_sq + wef_norm_sq.T - 2*dot_product_matrix)
 
-            dis[i] = dis_i
-            cos[i] = cos_i
+        # Sum of all Euclidean distances for each client
+        np.fill_diagonal(euclidean_dist_matrix, 0) # Set diagonal to 0
+        dis = {cid: np.sum(euclidean_dist_matrix[i, :]) for i, cid in enumerate(client_ids)}
 
-            # Calculate the average frequency of wef_i
-            avg_i = np.average(wef_i)
-            avg[i] = avg_i
+        # 3.2 Calculate the cosine similarity
+        wef_norms = np.linalg.norm(wef_matrix_np, axis=1)
+        norm_product_matrix = np.outer(wef_norms, wef_norms)
+        norm_product_matrix[norm_product_matrix == 0] = 1e-9    # Avoid division by 0
+        cosine_similarity_matrix = dot_product_matrix / norm_product_matrix
 
+        # Sum of all cosine similarites for each client
+        np.fill_diagonal(cosine_similarity_matrix, 0) # Set diagonal to 0
+        cos = {cid: np.sum(cosine_similarity_matrix[i, :]) for i, cid in enumerate(client_ids)}
+
+        # 3.3 Calculate the average frequency
+        avg = {cid: np.average(self.wef_matrix[cid]) for cid in client_ids}
         
         # Calculate the deviations
         dis_avg = np.average(list(dis.values()))
@@ -104,6 +97,7 @@ class WEFDetection(Detection):
             #print(f"Deviations of {i}:\t{dis_dev:.6f},\t{cos_dev:.6f},\t{avg_dev:.6f}")
 
         # Normalize dis_i, cos_i and dev_i and add them to obtain Dev_i
+        Dev = {}
         dis_dev_sum = np.sum(list(dis_devs.values()))
         cos_dev_sum = np.sum(list(cos_devs.values()))
         avg_dev_sum = np.sum(list(avg_devs.values()))
