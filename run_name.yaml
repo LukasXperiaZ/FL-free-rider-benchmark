@@ -1,1 +1,1 @@
-RUN_NAME: cifar10--n=100--0%--no_attack--wef
+RUN_NAME: mnist--n=100--70%--adaptive--viceroy

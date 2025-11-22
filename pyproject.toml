@@ -22,13 +22,14 @@ wandb = "^0.19.11"
 jupyter = "^1.1.1"
 toml = "^0.10.2"
 scikit-learn = "^1.6.1"
+seaborn = "^0.13.2"
 
 [tool.flwr.app.components]
 serverapp = "server_app:app"
 clientapp = "client_app:app"
 
 [tool.flwr.app.config]
-num-server-rounds = 40
+num-server-rounds = 20
 fraction-fit = 1.0
 fraction-evaluate = 0.0
 local-epochs = 1
